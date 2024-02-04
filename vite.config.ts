@@ -1,10 +1,17 @@
+/// <reference types="vitest" />
+/// <reference types="vite/client" />
+
+import react from "@vitejs/plugin-react";
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-/** @type {import('vite').UserConfig} */
 export default defineConfig({
         plugins: [react()],
+        resolve: {
+                alias: {
+                        '@': '/src'
+                },
+        },
         server: {
                 host: '0.0.0.0',
                 port: 3000,
@@ -13,9 +20,10 @@ export default defineConfig({
                 },
                 strictPort: true,
         },
-        resolve: {
-                alias: {
-                        '@': '/src'
-                },
+        test: {
+                globals: true,
+                environment: "jsdom",
+                css: true, // Ensures that the element is available in the DOM
+                setupFiles: ["./src/setupTests.tsx"],
         },
 })
