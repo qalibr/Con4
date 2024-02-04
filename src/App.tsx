@@ -4,7 +4,6 @@ import './App.css';
 function App() {
         return (
             <div style={{margin: "0 1rem 0 1rem", paddingTop: "env(safe-area-inset-top)"}}>
-                    <h1> Connect Four </h1>
                     <Outlet></Outlet> {/* Outlet wraps around the rest of our components in index.js */}
             </div>
         );
