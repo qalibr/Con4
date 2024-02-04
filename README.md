@@ -33,6 +33,12 @@ You will be running the app from the command line.
 
 ## Web dev:
 
+Run ``npm run dev``
+
+### ~~Development through Docker~~ **(Don't use)**
+
+**This does not work reliably with Vite, as opposed to CRA.**
+
 The web development portion has working hot loading.
 
 1. ``docker-compose up`` to start
@@ -53,7 +59,10 @@ name than the ones you have in your Virtual Device Manager. Example:
 
 ## Testing
 
-``npm run test``
+Run ``npm run test`` to run your test suite and exit.
+
+Run ``npm run coverage`` to run your tests and then wait for file changes. Upon file change test suite automatically
+re-runs.
 
 # Set up environment
 
