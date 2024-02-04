@@ -51,6 +51,10 @@ name than the ones you have in your Virtual Device Manager. Example:
 
 ``Please choose a target device: » Google sdk_gphone64_x86_64 (emulator-5554)``
 
+## Testing
+
+``npm run test``
+
 # Set up environment
 
 In order to use emulators from your Android Studio some setup is required.
