@@ -1,36 +1,13 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Outlet } from 'react-router-dom'
+import './App.css';
 
 function App() {
-        const [count, setCount] = useState(0)
-
         return (
-            <>
-                    <div>
-                            <a href="https://vitejs.dev" target="_blank">
-                                    <img src={viteLogo} className="logo" alt="Vite logo"/>
-                            </a>
-                            <a href="https://react.dev" target="_blank">
-                                    <img src={reactLogo} className="logo react" alt="React logo"/>
-                            </a>
-                    </div>
-                    <h1>Vite + React</h1>
-                    <p>Hello World</p>
-                    <div className="card">
-                            <button onClick={() => setCount((count) => count + 1)}>
-                                    count is {count}
-                            </button>
-                            <p>
-                                    Edit <code>src/App.tsx</code> and save to test HMR
-                            </p>
-                    </div>
-                    <p className="read-the-docs">
-                            Click on the Vite and React logos to learn more
-                    </p>
-            </>
-        )
+            <div style={{margin: "0 1rem 0 1rem", paddingTop: "env(safe-area-inset-top)"}}>
+                    <h1> Connect Four </h1>
+                    <Outlet></Outlet> {/* Outlet wraps around the rest of our components in index.js */}
+            </div>
+        );
 }
 
 export default App
