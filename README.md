@@ -68,6 +68,10 @@ Run ``npm run test`` to run your test suite and exit.
 Run ``npm run coverage`` to run your tests and then wait for file changes. Upon file change test suite automatically
 re-runs.
 
+### Docker Testing
+
+We can also use Docker to run tests ``docker-compose up``
+
 # Set up environment
 
 In order to use emulators from your Android Studio some setup is required.

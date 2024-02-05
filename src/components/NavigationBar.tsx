@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/solid';
@@ -34,7 +35,7 @@ export const NavigationBar = () => {
                                         to="/login"
                                         className="text-2xl text-gray-400 font-bold hover:text-gray-50"
                                     >
-                                            Login
+                                            <h1>Sign in</h1>
                                     </NavLink>
                             </li>
                     </ul>
