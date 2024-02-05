@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient'
 
+// https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
 
 function Login() {
 
