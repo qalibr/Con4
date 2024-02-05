@@ -3,10 +3,20 @@ import { supabase } from '../supabaseClient'
 
 
 function Login() {
+
+        const login = async () => {
+                await supabase.auth.signInWithOAuth({
+                        provider: "github",
+                });
+        };
+
+
         return (
-            <>
-                    Login
-            </>
+            <div>
+                    <button onClick={login} className="text-white">
+                            Login with Github
+                    </button>
+            </div>
         )
 }
 
