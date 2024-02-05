@@ -17,7 +17,8 @@ This is a React project using Capacitor to port to native platforms with a focus
 - Gradle v8.5.0
     - Build system for native development.
 - Docker
-    - Web development and testing in a sanitized environment.
+    - ~~Web development and testing in a sanitized environment.~~ Vite broke it, worked well with CRA.
+    - Local testing.
 - React
     - Template made using Vite
     - For easy frontend development.
