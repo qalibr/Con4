@@ -2,35 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient'
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
-
 const User = (() => {
         const [user, setUser] = useState(null);
 
         useEffect(() => {
-                const session = supabase.auth.getSession();
-
-                setUser(session?.user);
-
-                const {data: authListener} = supabase.auth.onAuthStateChange((event, session) => {
-                        switch (event) {
-                                case "SIGNED_IN":
-                                        setUser(session?.user);
-                                        break;
-                                case "SIGNED_OUT":
-                                        setUser(null);
-                                        break;
-                                default:
+                const fetchSession = async () => {
+                        const {data: {session}, error} = await supabase.auth.getSession();
+                        if (error) {
+                                console.error('Error fetching session:', error.message);
+                        } else {
+                                setUser(session?.user ?? null);
                         }
+                };
+
+                fetchSession();
+
+                const {data: authListener} = supabase.auth.onAuthStateChange((_event, session) => {
+                        setUser(session?.user ?? null);
                 });
 
                 return () => {
                         authListener.subscription.unsubscribe();
-                }
+                };
         }, []);
 
         const logout = async () => {
                 await supabase.auth.signOut();
-        }
+        };
 
         const login = async () => {
                 await supabase.auth.signInWithOAuth({

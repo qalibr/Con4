@@ -20,7 +20,7 @@ root.render(
 
                                     {/* Navigation for other pages here. */}
                                     <Route path="/app/dashboard" element={<Dashboard/>}></Route>
-                                    <Route path="/user" element={<User/>}></Route>
+                                    <Route path="/app/user" element={<User/>}></Route>
 
                                     {/* Wildcard in case user ends up in an undefined route. */}
                                     {/* TODO: Could make it 404 page? */}
