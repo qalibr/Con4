@@ -32,10 +32,10 @@ export const NavigationBar = () => {
                     <ul>
                             <li className="mr-4">
                                     <NavLink
-                                        to="/login"
+                                        to="/user"
                                         className="text-2xl text-gray-400 font-bold hover:text-gray-50"
                                     >
-                                            <h1>Sign in</h1>
+                                            <h1>User</h1>
                                     </NavLink>
                             </li>
                     </ul>
