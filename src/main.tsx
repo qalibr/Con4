@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import Home from "./routes/Home.tsx";
 import Dashboard from "./routes/Dashboard";
-import UserComponent from "./routes/User.tsx";
+import LoginComponent from "./components/Login.tsx";
 import NavigationBar from "./components/NavigationBar.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
@@ -20,7 +20,7 @@ root.render(
 
                                     {/* Navigation for other pages here. */}
                                     <Route path="/app/dashboard" element={<Dashboard/>}></Route>
-                                    <Route path="/app/user" element={<UserComponent/>}></Route>
+                                    <Route path="/app/user" element={<LoginComponent/>}></Route>
 
                                     {/* Wildcard in case user ends up in an undefined route. */}
                                     {/* TODO: Could make it 404 page? */}

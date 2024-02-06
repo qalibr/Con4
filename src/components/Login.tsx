@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient'
+import { supabase } from '../supabaseClient.tsx'
 import { User } from '@supabase/supabase-js';
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
-const UserComponent = () => {
+const LoginComponent = () => {
         const [user, setUser] = useState<User | null>(null);
         const [loading, setLoading] = useState(true); // Loading variable
 
@@ -59,4 +59,4 @@ const UserComponent = () => {
         )
 }
 
-export default UserComponent;
+export default LoginComponent;
