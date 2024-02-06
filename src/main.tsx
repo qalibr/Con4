@@ -3,9 +3,9 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
-import Home from "./routes/Home.tsx";
-import Dashboard from "./routes/Dashboard";
-import LoginComponent from "./components/Login.tsx";
+import HomePage from "./routes/HomePage.tsx";
+import DashboardPage from "./routes/DashboardPage.tsx";
+import LoginComponent from "./components/LoginComponent.tsx";
 import NavigationBar from "./components/NavigationBar.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
@@ -15,11 +15,11 @@ root.render(
                     <NavigationBar/>
                     <Routes>
                             <Route path='/' element={<App/>}>
-                                    {/* Home.tsx set as home right now, prompt for login. */}
-                                    <Route path="" element={<Home/>}></Route>
+                                    {/* HomePage.tsx set as home right now, prompt for login. */}
+                                    <Route path="" element={<HomePage/>}></Route>
 
                                     {/* Navigation for other pages here. */}
-                                    <Route path="/app/dashboard" element={<Dashboard/>}></Route>
+                                    <Route path="/app/dashboard" element={<DashboardPage/>}></Route>
                                     <Route path="/app/user" element={<LoginComponent/>}></Route>
 
                                     {/* Wildcard in case user ends up in an undefined route. */}

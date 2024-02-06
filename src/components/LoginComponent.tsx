@@ -41,7 +41,7 @@ const LoginComponent = () => {
         };
 
         return (
-            <div className="flex-auto px-8 py-8 relative top-48">
+            <div className="flex-auto px-8 py-8 relative top-56">
                     {loading ? (
                         // Using the loading variable to prevent us from briefly
                         // seeing the Login with GitHub message when going to User page.
