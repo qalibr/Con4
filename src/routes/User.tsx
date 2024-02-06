@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient'
+import { User } from '@supabase/supabase-js';
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
-const User = (() => {
-        const [user, setUser] = useState(null);
+const UserComponent = () => {
+        const [user, setUser] = useState<User | null>(null);
+        const [loading, setLoading] = useState(true); // Loading variable
 
         useEffect(() => {
                 const fetchSession = async () => {
@@ -13,12 +15,14 @@ const User = (() => {
                         } else {
                                 setUser(session?.user ?? null);
                         }
+                        setLoading(false);
                 };
 
                 fetchSession();
 
                 const {data: authListener} = supabase.auth.onAuthStateChange((_event, session) => {
                         setUser(session?.user ?? null);
+                        setLoading(false);
                 });
 
                 return () => {
@@ -36,21 +40,23 @@ const User = (() => {
                 });
         };
 
-        console.log(user);
-
         return (
-            <div>
-                    {user ? (
-                        <button onClick={logout} className="text-white">
+            <div className="flex-auto px-8 py-8 relative top-48">
+                    {loading ? (
+                        // Using the loading variable to prevent us from briefly
+                        // seeing the Login with GitHub message when going to User page.
+                        <p></p>
+                    ) : user ? (
+                        <button onClick={logout} className="btn-primary">
                                 Logout
                         </button>
                     ) : (
-                        <button onClick={login} className="text-white">
+                        <button onClick={login} className="btn-primary">
                                 Login with Github
                         </button>
                     )}
             </div>
         )
-})
+}
 
-export default User;
+export default UserComponent;
