@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import LoginComponent from "@/components/LoginComponent.tsx";
 
 export const NavigationBar = () => {
         return (
@@ -21,13 +22,9 @@ export const NavigationBar = () => {
                                     </NavLink>
                             </li>
                     </ul>
-                    <ul className="flex justify-between px-8 relative top-env(safe-area-inset-top) items-center">
+                    <ul className="flex">
                             <li className="mr-4">
-                                    <NavLink to="/app/user">
-                                            <Button>
-                                                    User
-                                            </Button>
-                                    </NavLink>
+                                    <LoginComponent/>
                             </li>
 
                             <li className="mr-4">

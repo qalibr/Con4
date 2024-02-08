@@ -22,7 +22,6 @@ root.render(
 
                                             {/* Navigation for other pages here. */}
                                             <Route path="/app/dashboard" element={<DashboardPage/>}></Route>
-                                            <Route path="/app/user" element={<LoginComponent/>}></Route>
 
                                             {/* Wildcard in case user ends up in an undefined route. */}
                                             {/* TODO: Could make it 404 page? */}

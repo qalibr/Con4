@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./GameLogic.tsx";
+import { Button } from "@/components/ui/button.tsx";
 
 function Game() {
         const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
@@ -66,9 +67,9 @@ function Game() {
                             {gameStatus !== 'inProgress' &&
                                 <p style={{color: "white"}}>Game
                                     Over: {gameStatus === 'draw' ? 'Draw' : `Winner is ${gameStatus}`}</p>}
-                            <button onClick={resetGame}
-                                    style={{padding: "10px 20px", fontSize: "16px", color: "white"}}>Reset Game
-                            </button>
+                            <Button onClick={resetGame}>
+                                    Reset Game
+                            </Button>
                     </div>
             </div>
         );

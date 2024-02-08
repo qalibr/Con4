@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient.tsx'
 import { User } from '@supabase/supabase-js';
 import { Button } from "@/components/ui/button.tsx";
+import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuTrigger,
+        DropdownMenuLabel,
+        DropdownMenuSeparator,
+        DropdownMenuItem
+} from "@/components/ui/dropdown-menu.tsx";
+import { Moon, Sun } from "lucide-react";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
 const LoginComponent = () => {
@@ -42,19 +51,36 @@ const LoginComponent = () => {
         };
 
         return (
-            <div className="flex-auto px-8 py-8 relative top-56">
+            <div>
                     {loading ? (
                         // Using the loading variable to prevent us from briefly
                         // seeing the Login with GitHub message when going to User page.
                         <p></p>
                     ) : user ? (
-                        <Button onClick={logout}>
-                                Logout
-                        </Button>
+                        <DropdownMenu>
+                                <DropdownMenuTrigger>
+                                        <Button>
+                                                User
+                                        </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+                                </DropdownMenuContent>
+                        </DropdownMenu>
                     ) : (
-                        <Button onClick={login}>
-                                Login with GitHub
-                        </Button>
+                        <DropdownMenu>
+                                <DropdownMenuTrigger>
+                                        <Button>
+                                                Login
+                                        </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                        <DropdownMenuLabel>Login Options</DropdownMenuLabel>
+                                        <DropdownMenuSeparator/>
+                                        <DropdownMenuItem onClick={login}>Login with GitHub</DropdownMenuItem>
+                                </DropdownMenuContent>
+                        </DropdownMenu>
+
                     )}
             </div>
         )
