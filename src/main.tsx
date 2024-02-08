@@ -1,13 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
+import { ThemeProvider } from "@/components/theme-provider.tsx";
 import App from './App.tsx'
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import HomePage from "./routes/HomePage.tsx";
 import DashboardPage from "./routes/DashboardPage.tsx";
-import LoginComponent from "./components/LoginComponent.tsx";
 import NavigationBar from "./components/NavigationBar.tsx";
-import { ThemeProvider } from "@/components/theme-provider.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
