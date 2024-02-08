@@ -23,11 +23,13 @@ This is a React project using Capacitor to port to native platforms with a focus
     - Template made using Vite
     - For easy frontend development.
     - Using typescript template.
-- Tailwind CSS, shadcn/ui, Headless UI and Heroicons
-    - Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
-      library.
-    - Tailwind for styling, headless for component logic, and heroicons for graphical elements.
-    - Abrogated previous, now using shadcn/ui for providing light/dark mode and buttons and other ready UI elements.
+- shadcn/uiTailwind CSS, Headless UI and Heroicons
+    - Developing the User Interface using shadcn/ui
+      - An extremely easy to use and beautiful component library.
+      - Used for light/dark mode theme switch, used for buttons and menus.
+    - ~~Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
+      library.~~
+    - ~~Tailwind for styling, headless for component logic, and heroicons for graphical elements.~~
 - Capacitor
     - Porting web app to native platforms.
 - Supabase
