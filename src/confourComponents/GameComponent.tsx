@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./GameLogicComponent.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { Alert } from "@/components/ui/alert.tsx";
 
 function GameComponent() {
         const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
@@ -64,12 +65,24 @@ function GameComponent() {
 
                     {/* Notify user of win/loss. Allow them to reset game at any time. */}
                     <div style={{marginTop: "20px"}}>
-                            {gameStatus !== 'inProgress' &&
-                                <p style={{color: "white"}}>Game
-                                    Over: {gameStatus === 'draw' ? 'Draw' : `Winner is ${gameStatus}`}</p>}
-                            <Button onClick={resetGame}>
-                                    Reset Game
-                            </Button>
+
+                            <ul className="flex-auto items-center">
+                                    <li style={{marginTop: "0px"}}>
+                                            {
+                                                gameStatus !== 'inProgress' &&
+                                                <Alert>
+                                                    Game
+                                                    Over: {gameStatus === 'draw' ? 'Draw' : `Winner is ${gameStatus}`}
+                                                </Alert>
+                                            }
+
+                                    </li>
+                                    <li style={{marginTop: "8px"}}>
+                                            <Button onClick={resetGame}>
+                                                    Reset Game
+                                            </Button>
+                                    </li>
+                            </ul>
                     </div>
             </div>
         );
