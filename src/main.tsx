@@ -6,14 +6,14 @@ import App from './App.tsx'
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import HomePage from "./routes/HomePage.tsx";
 import DashboardPage from "./routes/DashboardPage.tsx";
-import NavigationBar from "./components/NavigationBar.tsx";
+import NavComponent from "./confourComponents/NavComponent.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
     <React.StrictMode>
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                     <BrowserRouter>
-                            <NavigationBar/>
+                            <NavComponent/>
                             <Routes>
                                     <Route path='/' element={<App/>}>
                                             {/* HomePage.tsx set as home right now, prompt for login. */}

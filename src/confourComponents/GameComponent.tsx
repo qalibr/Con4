@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./GameLogic.tsx";
+import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./LogicComponent.tsx";
 import { Button } from "@/components/ui/button.tsx";
 
-function Game() {
+function GameComponent() {
         const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
         const [currentPlayer, setCurrentPlayer] = useState<Player>('red');
         const [gameStatus, setGameStatus] = useState<GameStatus>('inProgress');
@@ -75,4 +75,4 @@ function Game() {
         );
 }
 
-export default Game;
+export default GameComponent;

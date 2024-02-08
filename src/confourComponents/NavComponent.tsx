@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import LoginComponent from "@/components/LoginComponent.tsx";
+import LoginComponent from "@/confourComponents/LoginComponent.tsx";
 
-export const NavigationBar = () => {
+export const NavComponent = () => {
         return (
             <nav className="flex justify-between px-8 relative top-env(safe-area-inset-top) items-center">
                     <ul className="flex">
@@ -35,4 +35,4 @@ export const NavigationBar = () => {
         )
 }
 
-export default NavigationBar;
+export default NavComponent;

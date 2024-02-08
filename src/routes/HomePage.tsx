@@ -1,9 +1,9 @@
-import Game from "../components/Game.tsx";
+import GameComponent from "../confourComponents/GameComponent.tsx";
 
 function HomePage() {
         return (
             <>
-                    <Game/>
+                    <GameComponent/>
             </>
         )
 }
