@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient.tsx'
 import { User } from '@supabase/supabase-js';
+import { Button } from "@/components/ui/button.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
 const LoginComponent = () => {
@@ -47,13 +48,13 @@ const LoginComponent = () => {
                         // seeing the Login with GitHub message when going to User page.
                         <p></p>
                     ) : user ? (
-                        <button onClick={logout} className="btn-primary">
+                        <Button onClick={logout}>
                                 Logout
-                        </button>
+                        </Button>
                     ) : (
-                        <button onClick={login} className="btn-primary">
-                                Login with Github
-                        </button>
+                        <Button onClick={login}>
+                                Login with GitHub
+                        </Button>
                     )}
             </div>
         )
