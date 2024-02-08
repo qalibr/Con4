@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./LogicComponent.tsx";
+import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./GameLogicComponent.tsx";
 import { Button } from "@/components/ui/button.tsx";
 
 function GameComponent() {
