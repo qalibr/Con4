@@ -1,12 +1,35 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { checkBoardState, GameStatus, generateEmptyBoard, Player, TokenBoard } from "./GameLogicComponent.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert } from "@/components/ui/alert.tsx";
+import { Application } from "pixi.js";
 
 function GameComponent() {
         const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
         const [currentPlayer, setCurrentPlayer] = useState<Player>('red');
         const [gameStatus, setGameStatus] = useState<GameStatus>('inProgress');
+
+        const pixiApp = useRef<Application | null>(null);
+        const pixiContainer = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+                if (pixiContainer.current && !pixiApp.current) {
+                        pixiApp.current = new Application({
+                                width: 500,
+                                height: 500,
+                        });
+                        pixiContainer.current.appendChild(pixiApp.current.view as unknown as HTMLCanvasElement);
+                }
+
+                // Cleanup function to run when the component unmounts
+                return () => {
+                        if (pixiApp.current) {
+                                pixiApp.current.destroy();
+                                pixiApp.current = null;
+                        }
+                };
+        }, []);
+
 
         useEffect(() => {
                 const winner = checkBoardState(board);
@@ -46,6 +69,8 @@ function GameComponent() {
                     alignItems: "center",
                     height: "85vh"
             }}>
+                    <div ref={pixiContainer}/>
+
                     {/* Clickable columns */}
                     <div style={{display: "flex"}}>
                             {board.map((column, columnIndex) => (
