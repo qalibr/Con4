@@ -7,6 +7,24 @@ import {
         Player
 } from '@/confourComponents/GameLogicComponent.tsx';
 
+type Move = {
+        columnIndex: number;
+        player: Player;
+};
+
+function simulateMoves(board: TokenBoard, moves: Move[]): TokenBoard {
+        const simBoard: TokenBoard = board.map(col => [...col]);
+
+        moves.forEach(({columnIndex, player}) => {
+                const updateRow: number = simBoard[columnIndex].findIndex((cell: Token) => cell === undefined);
+                if (updateRow !== -1) {
+                        simBoard[columnIndex][updateRow] = player;
+                }
+        });
+
+        return simBoard;
+}
+
 describe('Game state tests', () => {
         it('should return game state inProgress', () => {
                 const initialBoard = generateEmptyBoard();
@@ -115,21 +133,3 @@ describe('Game state tests', () => {
                 expect(checkBoardState(endBoard)).toBe('green');
         });
 });
-
-type Move = {
-        columnIndex: number;
-        player: Player;
-};
-
-function simulateMoves(board: TokenBoard, moves: Move[]): TokenBoard {
-        const simBoard: TokenBoard = board.map(col => [...col]);
-
-        moves.forEach(({columnIndex, player}) => {
-                const updateRow: number = simBoard[columnIndex].findIndex((cell: Token) => cell === undefined);
-                if (updateRow !== -1) {
-                        simBoard[columnIndex][updateRow] = player;
-                }
-        });
-
-        return simBoard;
-}
