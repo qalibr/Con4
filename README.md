@@ -1,7 +1,5 @@
 # Project
 
-This is a React project using Capacitor to port to native platforms with a focus on Android.
-
 This is a connect four game web app using React (Vite) and Capacitor for porting to native platforms.
 
 ## TL;DR
