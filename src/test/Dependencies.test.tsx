@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import packageJson from '../../package.json';
 
-// Two tests to ensure that the development environment doesn't change unintentionally.
+/* Two tests to ensure that the development environment doesn't change unintentionally. */
+// Why? During prototyping one of my test projects I did an npm fix, if I recall correctly,
+// and it broke the entire project.
+// Do not install dependencies without good reason. When you do, add them here.
 
 const expectedDependencies = {
         "@capacitor/android": "^5.6.0",
