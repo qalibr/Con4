@@ -1,5 +1,5 @@
 export type Player = 'red' | 'green';
-type Token = undefined | Player; // Undefined means open spot, Player means token is there or not.
+export type Token = undefined | Player; // Undefined means open spot, Player means token is there or not.
 export type TokenBoard = Token[][]; // Map of tokens
 export type GameStatus = 'inProgress' | 'red' | 'green' | 'draw';
 
@@ -10,11 +10,12 @@ export function generateEmptyBoard(): TokenBoard {
 }
 
 /* Check for winner or inconclusive board state */
-export function checkBoardState(board: TokenBoard): Player | 'draw' | undefined {
+export function checkBoardState(board: TokenBoard): Player | 'draw' | 'inProgress' | undefined {
         // Check for horizontal win
         for (let x = 0; x < 4; x++) {
                 for (let y = 0; y < 6; y++) {
                         const token = board[x][y];
+                        // console.log(token);
                         if (token === undefined) continue;
                         if (token === board[x + 1][y] && token === board[x + 2][y] && token === board[x + 3][y]) {
                                 return token;
@@ -26,6 +27,7 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | undefined 
         for (let x = 0; x < 7; x++) {
                 for (let y = 0; y < 3; y++) {
                         const token = board[x][y];
+                        // console.log(token);
                         if (token === undefined) continue;
                         if (token === board[x][y + 1] && token === board[x][y + 2] && token === board[x][y + 3]) {
                                 return token;
@@ -37,6 +39,7 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | undefined 
         for (let x = 0; x < 4; x++) {
                 for (let y = 0; y < 3; y++) {
                         const token = board[x][y];
+                        // console.log(token);
                         if (token === undefined) continue;
                         if (token === board[x + 1][y + 1] && token === board[x + 2][y + 2] && token === board[x + 3][y + 3]) {
                                 return token;
@@ -48,6 +51,7 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | undefined 
         for (let x = 0; x < 4; x++) {
                 for (let y = 3; y < 6; y++) {
                         const token = board[x][y];
+                        // console.log(token);
                         if (token === undefined) continue;
                         if (token === board[x + 1][y - 1] && token === board[x + 2][y - 2] && token === board[x + 3][y - 3]) {
                                 return token;
@@ -58,6 +62,11 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | undefined 
         // Check for draw
         if (board.every(column => column.every(cell => cell !== undefined))) {
                 return 'draw';
+        }
+
+        // Check if game is in progress
+        if (!board.every(column => column.every(cell => cell !== undefined))) {
+                return 'inProgress';
         }
 
         return undefined;
