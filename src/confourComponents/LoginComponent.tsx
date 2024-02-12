@@ -10,7 +10,6 @@ import {
         DropdownMenuSeparator,
         DropdownMenuItem
 } from "@/components/ui/dropdown-menu.tsx";
-import { Moon, Sun } from "lucide-react";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
 const LoginComponent = () => {
@@ -44,7 +43,7 @@ const LoginComponent = () => {
                 await supabase.auth.signOut();
         };
 
-        const login = async () => {
+        const loginGhub = async () => {
                 await supabase.auth.signInWithOAuth({
                         provider: "github",
                 });
@@ -77,7 +76,8 @@ const LoginComponent = () => {
                                 <DropdownMenuContent>
                                         <DropdownMenuLabel>Login Options</DropdownMenuLabel>
                                         <DropdownMenuSeparator/>
-                                        <DropdownMenuItem onClick={login}>Login with GitHub</DropdownMenuItem>
+                                        {/* Login options */}
+                                        <DropdownMenuItem onClick={loginGhub}>Login with GitHub</DropdownMenuItem>
                                 </DropdownMenuContent>
                         </DropdownMenu>
 

@@ -3,14 +3,16 @@ export type Token = undefined | Player; // Undefined means open spot, Player mea
 export type TokenBoard = Token[][]; // Map of tokens
 export type GameStatus = 'inProgress' | 'red' | 'green' | 'draw';
 
-/* Generate empty board for play. */
+/// Generate empty board for play.
 export function generateEmptyBoard(): TokenBoard {
-        // This can be accessed by coordinates, [x][y]
+        // Map of tokens that can be accessed by coordinates, [x][y]
         return Array(7).fill(undefined).map(() => Array(6).fill(undefined));
 }
 
-/* Check for winner or inconclusive board state */
+/// Check for winner or inconclusive board state
+/// Token represents current player's color
 export function checkBoardState(board: TokenBoard): Player | 'draw' | 'inProgress' | undefined {
+
         // Check for horizontal win
         for (let x = 0; x < 4; x++) {
                 for (let y = 0; y < 6; y++) {
@@ -35,7 +37,7 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | 'inProgres
                 }
         }
 
-        // Check for diagonal win
+        // Check for diagonal win in '/' direction
         for (let x = 0; x < 4; x++) {
                 for (let y = 0; y < 3; y++) {
                         const token = board[x][y];
@@ -47,7 +49,7 @@ export function checkBoardState(board: TokenBoard): Player | 'draw' | 'inProgres
                 }
         }
 
-        // Check for other diagonal win
+        // Check for diagonal win in '\' direction
         for (let x = 0; x < 4; x++) {
                 for (let y = 3; y < 6; y++) {
                         const token = board[x][y];
