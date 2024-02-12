@@ -2,6 +2,34 @@
 
 This is a React project using Capacitor to port to native platforms with a focus on Android.
 
+This is a connect four game web app using React (Vite) and Capacitor for porting to native platforms.
+
+## TL;DR
+
+Command line commands for development:
+
+### Web development with live reload.
+
+``npm run dev``
+
+``npm run test``
+
+### Port to Android
+
+_Requires setup, see below_
+
+``npm run build``
+
+``npx cap copy``
+
+``npx cap sync``
+
+``npx cap run android``
+
+### We can run the test suite with Docker.
+
+``docker-compose up``
+
 ## Tools
 
 - NodeJS
@@ -23,7 +51,7 @@ This is a React project using Capacitor to port to native platforms with a focus
     - Template made using Vite
     - For easy frontend development.
     - Using typescript template.
-- shadcn/uiTailwind CSS, Headless UI and Heroicons
+- shadcn/ui, Tailwind CSS, Headless UI and Heroicons
     - Developing the User Interface using shadcn/ui
       - An extremely easy to use and beautiful component library.
       - Used for light/dark mode theme switch, used for buttons and menus.

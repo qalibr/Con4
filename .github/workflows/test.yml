@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [ 16.x, 18.x, 20.x, "latest" ]
+        node-version: [ 16.x, 18.x, 20.x, "latest" ] # Legacy support (16,18), current (20) and latest.
 
     steps:
       - uses: actions/checkout@v3
