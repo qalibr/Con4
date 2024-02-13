@@ -12,6 +12,12 @@ Command line commands for development:
 
 ``npm run test``
 
+### Prettier
+
+``npm run lint``
+
+``npm run lint -- --fix``
+
 ### Port to Android
 
 _Requires setup, see below_
@@ -66,6 +72,8 @@ _Requires setup, see below_
     - Porting web app to native platforms.
 - Supabase
     - BaaS (backend-as-service) for authentication and database.
+- Prettier, ESLint
+    - Using Prettier and ESLint for code style consistency.
 
 # Development Commands
 
