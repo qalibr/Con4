@@ -1,10 +1,48 @@
 # Project
 
-This is a React project using Capacitor to port to native platforms with a focus on Android.
+This is a connect four game web app using React (Vite) and Capacitor for porting to native platforms.
+
+## TL;DR
+
+Command line commands for development:
+
+### Web development with live reload.
+
+``npm run dev``
+
+``npm run test``
+
+### Prettier
+
+``npm run lint``
+
+``npm run lint -- --fix``
+
+### Port to Android
+
+_Requires setup, see below_
+
+``npm run build``
+
+``npx cap copy``
+
+``npx cap sync``
+
+``npx cap run android``
+
+### We can run the test suite with Docker.
+
+``docker-compose up``
 
 ## Tools
 
 - NodeJS
+    - Due to an annoying
+      error (https://stackoverflow.com/questions/68774489/punycode-is-deprecated-in-npm-what-should-i-replace-it-with)
+      We are using Node LTS 20.11 for this project.
+        - Uninstall NodeJS before installing nvm.
+        - https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows
+        - https://github.com/coreybutler/nvm-windows#installation--upgrades
 - Webstorm/VSCode
 - Android Studio
     - SDK Manager
@@ -23,10 +61,10 @@ This is a React project using Capacitor to port to native platforms with a focus
     - Template made using Vite
     - For easy frontend development.
     - Using typescript template.
-- shadcn/uiTailwind CSS, Headless UI and Heroicons
+- shadcn/ui, Tailwind CSS, Headless UI and Heroicons
     - Developing the User Interface using shadcn/ui
-      - An extremely easy to use and beautiful component library.
-      - Used for light/dark mode theme switch, used for buttons and menus.
+        - An extremely easy to use and beautiful component library.
+        - Used for light/dark mode theme switch, used for buttons and menus.
     - ~~Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
       library.~~
     - ~~Tailwind for styling, headless for component logic, and heroicons for graphical elements.~~
@@ -34,6 +72,8 @@ This is a React project using Capacitor to port to native platforms with a focus
     - Porting web app to native platforms.
 - Supabase
     - BaaS (backend-as-service) for authentication and database.
+- Prettier, ESLint
+    - Using Prettier and ESLint for code style consistency.
 
 # Development Commands
 

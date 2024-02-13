@@ -1,9 +1,6 @@
+/// User settings (navlink), statistics, other...
 function DashboardPage() {
-        return (
-            <>
-
-            </>
-        )
+  return <></>;
 }
 
 export default DashboardPage;
