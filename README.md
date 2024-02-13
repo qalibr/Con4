@@ -31,6 +31,12 @@ _Requires setup, see below_
 ## Tools
 
 - NodeJS
+    - Due to an annoying
+      error (https://stackoverflow.com/questions/68774489/punycode-is-deprecated-in-npm-what-should-i-replace-it-with)
+      We are using Node LTS 20.11 for this project.
+        - Uninstall NodeJS before installing nvm.
+        - https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows
+        - https://github.com/coreybutler/nvm-windows#installation--upgrades
 - Webstorm/VSCode
 - Android Studio
     - SDK Manager
@@ -51,8 +57,8 @@ _Requires setup, see below_
     - Using typescript template.
 - shadcn/ui, Tailwind CSS, Headless UI and Heroicons
     - Developing the User Interface using shadcn/ui
-      - An extremely easy to use and beautiful component library.
-      - Used for light/dark mode theme switch, used for buttons and menus.
+        - An extremely easy to use and beautiful component library.
+        - Used for light/dark mode theme switch, used for buttons and menus.
     - ~~Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
       library.~~
     - ~~Tailwind for styling, headless for component logic, and heroicons for graphical elements.~~
