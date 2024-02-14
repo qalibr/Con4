@@ -7,6 +7,7 @@ import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import HomePage from "./routes/HomePage.tsx";
 import DashboardPage from "./routes/DashboardPage.tsx";
 import NavComponent from "./confourComponents/NavComponent.tsx";
+import SignupPage from "@/routes/SignupPage.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
@@ -21,6 +22,7 @@ root.render(
 
             {/* Navigation for other pages here. */}
             <Route path="/app/dashboard" element={<DashboardPage />}></Route>
+            {/*<Route path="/app/signup" element={<SignupPage />}></Route>*/}
 
             {/* Wildcard in case user ends up in an undefined route. */}
             {/* TODO: Could make it 404 page? */}
