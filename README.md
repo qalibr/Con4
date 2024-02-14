@@ -6,7 +6,7 @@ This is a connect four game web app using React (Vite) and Capacitor for porting
 
 Command line commands for development:
 
-### Web development with live reload.
+### Web development with live reload. 
 
 ``npm run dev``
 
