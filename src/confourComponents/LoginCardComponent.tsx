@@ -1,4 +1,6 @@
 import * as React from "react";
+import { useState } from "react";
+import supabase from "@/supabaseClient.tsx";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,52 +12,53 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import supabase from "@/supabaseClient.tsx";
 
 interface Props {
   onCancel: () => void;
+  onLoginSuccess: () => void;
 }
 
-export function SignupCardComponent({ onCancel }: Props) {
+export function LoginCardComponent({ onCancel, onLoginSuccess }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       setError(error.message);
+      setLoading(false);
+    } else if (data.user) {
+      onLoginSuccess();
     } else {
-      onCancel();
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <Card className="w-[350px]">
         <CardHeader>
-          <CardTitle>Sign up</CardTitle>
-          <CardDescription>Enter email and password.</CardDescription>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>Enter your email and password.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignUp}>
+          <form onSubmit={handleLogin}>
             <div className="grid w-full gap-4">
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="login-email">Email</Label>
                 <Input
-                  id="email"
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -63,9 +66,9 @@ export function SignupCardComponent({ onCancel }: Props) {
                 />
               </div>
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="login-password">Password</Label>
                 <Input
-                  id="password"
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -84,7 +87,7 @@ export function SignupCardComponent({ onCancel }: Props) {
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Signing up..." : "Sign up"}
+                {loading ? "Logging in..." : "Log in"}
               </Button>
             </CardFooter>
           </form>

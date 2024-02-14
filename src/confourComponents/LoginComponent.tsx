@@ -11,12 +11,14 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.tsx";
 import { SignupCardComponent } from "@/confourComponents/SignupCardComponent.tsx";
+import { LoginCardComponent } from "@/confourComponents/LoginCardComponent.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
 const LoginComponent = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // Loading variable
   const [showSignupCard, setShowSignupCard] = useState(false);
+  const [showLoginCard, setShowLoginCard] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -60,8 +62,16 @@ const LoginComponent = () => {
     setShowSignupCard(!showSignupCard);
   };
 
-  const handleCancel = () => {
+  const toggleLoginCard = () => {
+    setShowLoginCard(!showLoginCard);
+  };
+
+  const handleCancelSignup = () => {
     setShowSignupCard(false);
+  };
+
+  const handleCancelLogin = () => {
+    setShowLoginCard(false);
   };
 
   return (
@@ -92,7 +102,9 @@ const LoginComponent = () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {/* Login options */}
-            <DropdownMenuItem>Login with Email</DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleLoginCard}>
+              Login with Email
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={loginGhub}>
               Login with GitHub
             </DropdownMenuItem>
@@ -100,7 +112,17 @@ const LoginComponent = () => {
         </DropdownMenu>
       )}
       <div className="relative">
-        {showSignupCard && <SignupCardComponent onCancel={handleCancel} />}
+        {showSignupCard && (
+          <SignupCardComponent onCancel={handleCancelSignup} />
+        )}
+      </div>
+      <div className="relative">
+        {showLoginCard && (
+          <LoginCardComponent
+            onCancel={handleCancelLogin}
+            onLoginSuccess={handleCancelLogin}
+          />
+        )}
       </div>
     </div>
   );
