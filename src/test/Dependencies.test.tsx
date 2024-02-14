@@ -18,6 +18,7 @@ const expectedDependencies = {
   "@radix-ui/react-select": "^2.0.0",
   "@radix-ui/react-slot": "^1.0.2",
   "@supabase/supabase-js": "^2.39.3",
+  "@tanstack/react-table": "^8.12.0",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.1.0",
   "lucide-react": "^0.323.0",
