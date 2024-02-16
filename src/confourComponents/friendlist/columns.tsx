@@ -1,4 +1,4 @@
-import React from "react";
+import React, { JSX } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export type Friend = {
   email: string;
 };
 
-const statusMap: { [K in Friend["status"]]: string } = {
+const statusMap: { [K in Friend["status"]]: JSX.Element } = {
   online: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -94,9 +94,9 @@ export const columns: ColumnDef<Friend, keyof Friend>[] = [
     header: () => <div className="text-right">Status</div>,
     cell: ({ getValue }) => {
       const status = getValue() as Friend["status"];
-      const labelOrIcon = statusMap[status];
+      const icon = statusMap[status];
 
-      return <div className="text-right font-medium">{labelOrIcon}</div>;
+      return <div className="text-right font-medium">{icon}</div>;
     },
   },
   // {
