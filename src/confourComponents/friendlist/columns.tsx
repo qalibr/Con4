@@ -14,15 +14,75 @@ import {
 export type Friend = {
   id: string;
   username: string;
-  status: "online" | "offline" | "busy" | "dnd";
+  status: "online" | "offline" | "away" | "dnd";
   email: string;
 };
 
 const statusMap: { [K in Friend["status"]]: string } = {
-  online: "Online",
-  offline: "Offline",
-  busy: "Busy",
-  dnd: "Do Not Disturb",
+  online: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="#10B981" // Tailwind CSS Green-500
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+      />
+    </svg>
+  ),
+  offline: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="#9CA3AF" // Tailwind CSS Gray-400
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+      />
+    </svg>
+  ),
+  away: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="#F59E0B" // Tailwind CSS Yellow-500
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  ),
+  dnd: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="#EF4444" // Tailwind CSS Red-500
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  ),
 };
 
 export const columns: ColumnDef<Friend, keyof Friend>[] = [
@@ -31,9 +91,9 @@ export const columns: ColumnDef<Friend, keyof Friend>[] = [
     header: () => <div className="text-right">Status</div>,
     cell: ({ getValue }) => {
       const status = getValue() as Friend["status"];
-      const label = statusMap[status];
+      const labelOrIcon = statusMap[status];
 
-      return <div className="text-right font-medium">{label}</div>;
+      return <div className="text-right font-medium">{labelOrIcon}</div>;
     },
   },
   {

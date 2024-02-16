@@ -20,8 +20,8 @@ async function getData(): Promise<Friend[]> {
     {
       id: "c45de672",
       username: "Charlie",
-      status: "busy",
-      email: "charliebusy@example.com",
+      status: "away",
+      email: "charlieaway@example.com",
     },
     {
       id: "d67fg834",
@@ -44,8 +44,8 @@ async function getData(): Promise<Friend[]> {
     {
       id: "g23kl456",
       username: "George",
-      status: "busy",
-      email: "georgebusy@example.com",
+      status: "away",
+      email: "georgeaway@example.com",
     },
     {
       id: "h45mn789",
@@ -68,8 +68,8 @@ async function getData(): Promise<Friend[]> {
     {
       id: "k01rs678",
       username: "Kyle",
-      status: "busy",
-      email: "kylebusy@example.com",
+      status: "away",
+      email: "kyleaway@example.com",
     },
     {
       id: "l23tu901",
@@ -92,8 +92,8 @@ async function getData(): Promise<Friend[]> {
     {
       id: "o89z8901",
       username: "Oscar",
-      status: "busy",
-      email: "oscarbusy@example.com",
+      status: "away",
+      email: "oscaraway@example.com",
     },
   ];
 }
