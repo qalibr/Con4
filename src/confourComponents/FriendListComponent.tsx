@@ -1,29 +1,51 @@
-import { useEffect, useState } from "react";
-import { Friend, columns } from "@/confourComponents/friendlist/columns.tsx";
-import { DataTable } from "@/confourComponents/friendlist/data-table.tsx";
-
-async function getData(): Promise<Friend[]> {
-  return [
-    {
-      id: "285ed52f",
-      username: "Bob",
-      status: "offline",
-      email: "notinuse@gmail.com",
-    },
-  ];
-}
+import React, { useEffect, useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { DataTable } from "@/confourComponents/friendlist/data-table";
+import { columns } from "@/confourComponents/friendlist/columns";
+import { FriendForm } from "@/confourComponents/friendlist/friend-form.tsx";
+import { Friend } from "@/confourComponents/friendlist/types.tsx";
+import { FetchFriends } from "@/confourComponents/friendlist/friends-service.tsx";
 
 export const FriendList = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const data = await getData();
-      setFriends(data);
-    };
-
     fetchData();
   }, []);
 
-  return <DataTable columns={columns} data={friends} />;
+  const fetchData = async () => {
+    const friendsData = await FetchFriends();
+    setFriends(friendsData);
+  };
+
+  const handleFormSuccess = (newFriend: Friend) => {
+    setFriends([...friends, newFriend]);
+    fetchData();
+  };
+
+  // TODO: Add loading animation during fetching
+  // Future: This fetches from database, can we store this with the user
+  // during session?
+  return (
+    <ul className="flex">
+      <li>
+        <ScrollArea className="h-screen w-fit rounded-md border">
+          <div className="p-4">
+            <h4 className="mb-4 text-sm font-medium leading-none">
+              Friend List
+            </h4>
+            <DataTable columns={columns} data={friends} />
+          </div>
+        </ScrollArea>
+      </li>
+      <li className="mr-4 rounded-md">
+        <div className="p-4 border">
+          <FriendForm
+            initialData={undefined}
+            onSubmitSuccess={handleFormSuccess}
+          />
+        </div>
+      </li>
+    </ul>
+  );
 };

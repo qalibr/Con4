@@ -5,7 +5,7 @@ import {
   generateEmptyBoard,
   Player,
   TokenBoard,
-} from "./GameLogicComponent.tsx";
+} from "./game/game-logic.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert } from "@/components/ui/alert.tsx";
 

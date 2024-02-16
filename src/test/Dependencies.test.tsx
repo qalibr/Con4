@@ -12,9 +12,12 @@ const expectedDependencies = {
   "@capacitor/ios": "^5.6.0",
   "@headlessui/react": "^1.7.18",
   "@heroicons/react": "^2.1.1",
+  "@hookform/resolvers": "^3.3.4",
   "@pixi/react": "^7.1.1",
   "@radix-ui/react-dropdown-menu": "^2.0.6",
+  "@radix-ui/react-hover-card": "^1.0.7",
   "@radix-ui/react-label": "^2.0.2",
+  "@radix-ui/react-scroll-area": "^1.0.5",
   "@radix-ui/react-select": "^2.0.0",
   "@radix-ui/react-slot": "^1.0.2",
   "@supabase/supabase-js": "^2.39.3",
@@ -25,9 +28,11 @@ const expectedDependencies = {
   "pixi.js": "^7.4.0",
   react: "^18.2.0",
   "react-dom": "^18.2.0",
+  "react-hook-form": "^7.50.1",
   "react-router-dom": "^6.22.0",
   "tailwind-merge": "^2.2.1",
   "tailwindcss-animate": "^1.0.7",
+  zod: "^3.22.4",
 };
 
 const expectedDevDependencies = {
