@@ -1,25 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DataTable } from "@/confourComponents/friendlist/data-table";
-import { Friend, columns } from "@/confourComponents/friendlist/columns";
+import { columns } from "@/confourComponents/friendlist/columns";
 import { FriendForm } from "@/confourComponents/friendlist/friend-form.tsx";
-
-async function getData(): Promise<Friend[]> {
-  return [];
-}
+import { Friend } from "@/confourComponents/friendlist/types.tsx";
+import { FetchFriends } from "@/confourComponents/friendlist/friends-service.tsx";
 
 export const FriendList = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const data = await getData();
-      setFriends(data);
-    };
-
     fetchData();
   }, []);
 
+  const fetchData = async () => {
+    const friendsData = await FetchFriends();
+    setFriends(friendsData);
+  };
+
+  const handleFormSuccess = (newFriend: Friend) => {
+    setFriends([...friends, newFriend]);
+    fetchData();
+  };
+
+  // TODO: Add loading animation during fetching
+  // Future: This fetches from database, can we store this with the user
+  // during session?
   return (
     <ul className="flex">
       <li>
@@ -34,7 +40,10 @@ export const FriendList = () => {
       </li>
       <li className="mr-4 rounded-md">
         <div className="p-4 border">
-          <FriendForm initialData={undefined} onSubmitSuccess={undefined} />
+          <FriendForm
+            initialData={undefined}
+            onSubmitSuccess={handleFormSuccess}
+          />
         </div>
       </li>
     </ul>

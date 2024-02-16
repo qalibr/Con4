@@ -16,6 +16,7 @@ import {
   addFriend,
   updateFriend,
 } from "@/confourComponents/friendlist/friends-db.tsx";
+import { Friend } from "@/confourComponents/friendlist/types.tsx";
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -25,7 +26,12 @@ const formSchema = z.object({
   email: z.string().email(),
 });
 
-export function FriendForm({ initialData, onSubmitSuccess }) {
+interface FriendFormProps {
+  initialData?: Friend;
+  onSubmitSuccess?: (data: Friend) => void;
+}
+
+export function FriendForm({ initialData, onSubmitSuccess }: FriendFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,8 +42,6 @@ export function FriendForm({ initialData, onSubmitSuccess }) {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-
     let result;
     if (initialData?.id) {
       result = await updateFriend(initialData.id, values);
@@ -48,12 +52,14 @@ export function FriendForm({ initialData, onSubmitSuccess }) {
     if (result.error) {
       console.error("Submission error", result.error);
     } else {
-      if (onSubmitSuccess) {
-        onSubmitSuccess(result.data);
+      if (onSubmitSuccess && result.data) {
+        onSubmitSuccess(result.data[0]);
       }
     }
   };
 
+  // Form to add friends. TODO: make it into something that resembles an actual add friend tool
+  // Bug: Form is not cleared upon submission
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

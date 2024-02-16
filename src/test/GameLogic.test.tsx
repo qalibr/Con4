@@ -5,7 +5,7 @@ import {
   Token,
   TokenBoard,
   Player,
-} from "@/confourComponents/GameLogicComponent.tsx";
+} from "@/confourComponents/game/game-logic.tsx";
 
 type Move = {
   columnIndex: number;

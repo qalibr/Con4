@@ -2,6 +2,7 @@ import React, { JSX } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Friend } from "@/confourComponents/friendlist/types.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,13 +16,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-
-export type Friend = {
-  id: string;
-  username: string;
-  status: "online" | "offline" | "away" | "dnd";
-  email: string;
-};
 
 const statusMap: { [K in Friend["status"]]: JSX.Element } = {
   online: (

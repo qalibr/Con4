@@ -9,8 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.tsx";
-import { SignupCardComponent } from "@/confourComponents/SignupCardComponent.tsx";
-import { LoginCardComponent } from "@/confourComponents/LoginCardComponent.tsx";
+import { SignupCard } from "@/confourComponents/auth/signup-card.tsx";
+import { LoginCard } from "@/confourComponents/auth/login-card.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
@@ -83,13 +83,11 @@ const LoginComponent = () => {
         </DropdownMenu>
       )}
       <div className="relative">
-        {showSignupCard && (
-          <SignupCardComponent onCancel={handleCancelSignup} />
-        )}
+        {showSignupCard && <SignupCard onCancel={handleCancelSignup} />}
       </div>
       <div className="relative">
         {showLoginCard && (
-          <LoginCardComponent
+          <LoginCard
             onCancel={handleCancelLogin}
             onLoginSuccess={handleCancelLogin}
           />
