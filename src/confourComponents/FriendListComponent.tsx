@@ -5,22 +5,25 @@ import { columns } from "@/confourComponents/friendlist/columns";
 import { FriendForm } from "@/confourComponents/friendlist/friend-form.tsx";
 import { Friend } from "@/confourComponents/friendlist/types.tsx";
 import { FetchFriends } from "@/confourComponents/friendlist/friends-service.tsx";
+import useAuth from "@/confourHooks/useAuth.tsx";
 
 export const FriendList = () => {
+  const { user } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData(user.id);
+    }
+  }, [user]);
 
-  const fetchData = async () => {
-    const friendsData = await FetchFriends();
+  const fetchData = async (userId: string) => {
+    const friendsData = await FetchFriends(userId);
     setFriends(friendsData);
   };
 
   const handleFormSuccess = (newFriend: Friend) => {
-    setFriends([...friends, newFriend]);
-    fetchData();
+    setFriends((prevFriends) => [...prevFriends, newFriend]);
   };
 
   // TODO: Add loading animation during fetching
