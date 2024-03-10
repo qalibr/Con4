@@ -18,6 +18,6 @@ module.exports = {
             {allowConstantExport: true},
         ],
         "no-unused-vars": "warn",
-        'prettier/prettier': ['error']
+        'prettier/prettier': ['off']
     },
 }
