@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import LoginComponent from "@/confourComponents/LoginComponent.tsx";
 import React from "react";
 import OnlineTracker from "@/confourComponents/auth/online-tracker.tsx";
+import CreateGame from "@/confourComponents/game/create-game.tsx";
 
 export const NavComponent = () => {
   return (
@@ -18,6 +19,10 @@ export const NavComponent = () => {
           <NavLink to="/app/dashboard">
             <Button>Dashboard</Button>
           </NavLink>
+        </li>
+        <li className="mr-4">
+          {/* Create a game room... */}
+          <CreateGame />
         </li>
       </ul>
       <ul className="flex items-center">

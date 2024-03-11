@@ -119,8 +119,16 @@ function GameComponent() {
               </Alert>
             )}
           </li>
+
           <li style={{ marginTop: "8px" }}>
             <Button onClick={resetGame}>Reset Game</Button>
+          </li>
+        </ul>
+        <ul className="flex justify-items-center py-2">
+          <li>
+            {/* Game room idea... */}
+            <Button className="mr-4">Game Room 1</Button>
+            <Button>Game Room 2</Button>
           </li>
         </ul>
       </div>
