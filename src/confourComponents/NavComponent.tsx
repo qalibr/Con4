@@ -2,6 +2,8 @@ import { NavLink } from "react-router-dom";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import LoginComponent from "@/confourComponents/LoginComponent.tsx";
+import React from "react";
+import OnlineTracker from "@/confourComponents/auth/online-tracker.tsx";
 
 export const NavComponent = () => {
   return (
@@ -18,7 +20,9 @@ export const NavComponent = () => {
           </NavLink>
         </li>
       </ul>
-      <ul className="flex">
+      <ul className="flex items-center">
+        <li className="mr-4">{OnlineTracker()}</li>
+
         <li className="mr-4">
           <LoginComponent />
         </li>

@@ -1,6 +1,8 @@
-import React from "react";
-import { FriendList } from "@/confourComponents/FriendListComponent";
+import React, { useEffect, useState } from "react";
 import useAuth from "@/confourHooks/useAuth.tsx";
+
+// import { FriendList } from "@/confourComponents/FriendListComponent";
+// import supabase from "@/supabaseClient.tsx";
 
 function DashboardPage() {
   const { user } = useAuth();
@@ -9,7 +11,8 @@ function DashboardPage() {
     <div>
       {user ? (
         <div className="container mx-auto py-10">
-          <FriendList />
+          {/*<FriendList />*/}
+          {/* */}
         </div>
       ) : (
         <div>
