@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button.tsx";
 import supabase from "@/supabaseClient.tsx";
@@ -14,6 +14,7 @@ export interface MultiplayerGame {
 const CreateGame = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [createdGame, setCreatedGame] = useState<MultiplayerGame | null>(null);
 
   const handleCreateGame = async () => {
     if (!user) {
@@ -21,22 +22,32 @@ const CreateGame = () => {
       return;
     }
 
+    // Unique game ID to navigate to
     const gameId = uuidv4();
 
-    // Create game entry in table
-    const { error } = await supabase.from("games").insert([
-      {
-        game_id: gameId,
-        game_status: "waiting",
-        game_creator: user.id,
-      },
-    ]);
+    // Create game entry in table, with gameId, status and creator.
+    const { error } = await supabase
+      .from("games")
+      .insert([
+        {
+          game_id: gameId,
+          game_status: "waiting",
+          game_creator: user.id,
+        },
+      ])
+      .select();
 
     if (error) {
       console.error("Error creating a new game:", error);
     } else {
-      // Create unique URL from which to host the game
+      const newGame: MultiplayerGame = {
+        game_id: gameId,
+        game_status: "waiting",
+        game_creator: user.id,
+      };
+      setCreatedGame(newGame);
       console.log("Game created successfully, navigating to the game room...");
+
       navigate(`/game/${gameId}`);
     }
   };

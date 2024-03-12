@@ -1,61 +1,66 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
-import { Button } from "@/components/ui/button.tsx";
-import { useNavigate } from "react-router-dom";
 import { MultiplayerGame } from "@/confourComponents/game/create-game.tsx";
+import { useNavigate } from "react-router-dom";
 
 const Lobby = () => {
-  const [games, setGames] = useState<MultiplayerGame[]>([]);
+  const [activeGames, setActiveGames] = useState<MultiplayerGame[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetching games with the status "waiting"
     const fetchGames = async () => {
-      const { data, error } = await supabase
+      const { data: games, error } = await supabase
         .from("games")
         .select("*")
         .eq("game_status", "waiting");
 
       if (error) {
-        console.error("Error fetching games:", error);
+        console.error("Error fetching games: ", error);
       } else {
-        // Treating data as multiplayergame
-        console.log("Fetched games:", data);
-        setGames((data as MultiplayerGame[]) || []);
+        setActiveGames(games);
       }
     };
 
     fetchGames();
 
-    // Subscribe to new games being created
-    const subscription = supabase
-      .from("games")
-      .on("INSERT", (payload: { new: MultiplayerGame }) => {
-        console.log("New game created:", payload.new);
-        setGames((currentGames) => [
-          ...currentGames,
-          payload.new as MultiplayerGame,
-        ]);
-      })
+    // Subscribe to channel to get notified of any changes to "games" table
+    const gameChannel = supabase
+      .channel("custom-all-channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "games" },
+        async (payload) => {
+          console.log("Change received!", payload);
+          await fetchGames();
+        },
+      )
       .subscribe();
 
     return () => {
-      console.log("Unsubscribing from game creations.");
-      subscription.unsubscribe();
+      gameChannel.unsubscribe();
     };
   }, []);
+
+  const handleGameClick = (gameId: string) => {
+    navigate(`/game/${gameId}`);
+  };
 
   return (
     <div>
       <h2>Available Games</h2>
-      <ul>
-        {games.map((game) => (
-          <li key={game.game_id}>
-            <Button onClick={() => navigate(`/game/${game.game_id}`)}>
-              Join Game {game.game_id}
-            </Button>
-          </li>
+      <div>
+        {/* "active" games in the sense you can join them since the initiator is still "waiting" */}
+        {activeGames.map((game) => (
+          <button
+            key={game.game_id}
+            onClick={() => handleGameClick(game.game_id)}
+            style={{ display: "block", margin: "10px 0" }}
+          >
+            Join Game: {game.game_id}
+          </button>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };

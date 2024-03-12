@@ -13,9 +13,6 @@ import { Alert } from "@/components/ui/alert.tsx";
 import supabase from "@/supabaseClient.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { useParams } from "react-router-dom";
-import Lobby from "@/confourComponents/game/lobby.tsx";
-
-// import { RoomState } from "@/confourComponents/game/create-game.tsx";
 
 function MultiplayerGameComponent() {
   const { user } = useAuth();
@@ -23,7 +20,6 @@ function MultiplayerGameComponent() {
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
-  // const [roomState, setRoomState] = useState<RoomState>("waiting");
   const [moveNumber, setMoveNumber] = useState(0);
 
   useEffect(() => {
@@ -126,16 +122,6 @@ function MultiplayerGameComponent() {
 
           <li style={{ marginTop: "8px" }}>
             <Button onClick={resetGame}>Reset Game</Button>
-          </li>
-        </ul>
-        <ul className="flex justify-items-center py-2">
-          <li>
-            {/* Game room idea... */}
-            <Button className="mr-4">Game Room 1</Button>
-            <Button>Game Room 2</Button>
-            {/*<Lobby />
-              BUG: Bugged currently, causing immediate crash when trying to see available games
-            */}
           </li>
         </ul>
       </div>
