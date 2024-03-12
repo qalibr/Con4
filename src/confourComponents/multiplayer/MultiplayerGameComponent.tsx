@@ -5,14 +5,26 @@ import {
   generateEmptyBoard,
   Player,
   TokenBoard,
-} from "./game/game-logic.tsx";
+} from "../game/game-logic.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert } from "@/components/ui/alert.tsx";
 
-function GameComponent() {
+// Facilitate multiplayer
+import supabase from "@/supabaseClient.tsx";
+import useAuth from "@/confourHooks/useAuth.tsx";
+import { useParams } from "react-router-dom";
+import Lobby from "@/confourComponents/game/lobby.tsx";
+
+// import { RoomState } from "@/confourComponents/game/create-game.tsx";
+
+function MultiplayerGameComponent() {
+  const { user } = useAuth();
+  const { gameId } = useParams();
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
+  // const [roomState, setRoomState] = useState<RoomState>("waiting");
+  const [moveNumber, setMoveNumber] = useState(0);
 
   useEffect(() => {
     const winner = checkBoardState(board);
@@ -21,7 +33,7 @@ function GameComponent() {
     }
   }, [board]);
 
-  const handleColumnClick = (columnIndex: number) => {
+  const handleColumnClick = async (columnIndex: number) => {
     if (gameStatus !== "inProgress") return; // Prevent moves if the game is over
 
     const newBoard = [...board];
@@ -35,12 +47,31 @@ function GameComponent() {
     // Update the board state and switch the current player
     setBoard(newBoard);
     setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
+
+    // Track moves and which player made them
+    setMoveNumber((prev) => prev + 1);
+    const { error } = await supabase.from("moves").insert([
+      {
+        game_id: gameId,
+        // @ts-expect-error user could be null
+        player: user.id,
+        player_color: currentPlayer,
+        column_index: columnIndex,
+        move_number: moveNumber,
+      },
+    ]);
+
+    if (error) {
+      console.error("Error inserting move to Supabase:", error.message);
+    }
   };
 
   const resetGame = () => {
     setBoard(generateEmptyBoard());
     setCurrentPlayer("red");
     setGameStatus("inProgress");
+    // setGameId(uuidv4()); // Start a new game session
+    setMoveNumber(0); // Reset move counter
   };
 
   return (
@@ -92,8 +123,19 @@ function GameComponent() {
               </Alert>
             )}
           </li>
+
           <li style={{ marginTop: "8px" }}>
             <Button onClick={resetGame}>Reset Game</Button>
+          </li>
+        </ul>
+        <ul className="flex justify-items-center py-2">
+          <li>
+            {/* Game room idea... */}
+            <Button className="mr-4">Game Room 1</Button>
+            <Button>Game Room 2</Button>
+            {/*<Lobby />
+              BUG: Bugged currently, causing immediate crash when trying to see available games
+            */}
           </li>
         </ul>
       </div>
@@ -101,4 +143,4 @@ function GameComponent() {
   );
 }
 
-export default GameComponent;
+export default MultiplayerGameComponent;
