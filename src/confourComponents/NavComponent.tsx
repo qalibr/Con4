@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button.tsx";
 import LoginComponent from "@/confourComponents/LoginComponent.tsx";
 import React from "react";
 import OnlineTracker from "@/confourComponents/auth/online-tracker.tsx";
-import CreateGame from "@/confourComponents/game/create-game.tsx";
+import CreateGame from "@/confourComponents/multiplayer/create-game.tsx";
 
 export const NavComponent = () => {
   return (

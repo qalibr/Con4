@@ -9,11 +9,14 @@ export interface MultiplayerGame {
   game_id: string;
   game_status: "waiting" | "active" | "ended";
   game_creator: string;
+  player_count: number;
 }
 
+// Create a game instance and navigate to it.
 const CreateGame = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  // eslint-disable-next-line
   const [createdGame, setCreatedGame] = useState<MultiplayerGame | null>(null);
 
   const handleCreateGame = async () => {
@@ -33,6 +36,7 @@ const CreateGame = () => {
           game_id: gameId,
           game_status: "waiting",
           game_creator: user.id,
+          player_count: 1,
         },
       ])
       .select();
@@ -44,6 +48,7 @@ const CreateGame = () => {
         game_id: gameId,
         game_status: "waiting",
         game_creator: user.id,
+        player_count: 1,
       };
       setCreatedGame(newGame);
       console.log("Game created successfully, navigating to the game room...");

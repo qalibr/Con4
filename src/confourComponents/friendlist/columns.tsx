@@ -17,6 +17,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
+// eslint-disable-next-line no-unused-vars
 const statusMap: { [K in Friend["status"]]: JSX.Element } = {
   online: (
     <svg
