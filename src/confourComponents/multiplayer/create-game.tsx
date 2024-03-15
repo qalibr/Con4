@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
 import { PlayerStatus } from "@/confourComponents/multiplayer/game-instance.tsx";
+import { Player } from "@/confourComponents/game/game-logic.tsx";
 
 export interface MultiplayerGame {
   game_id: string;
@@ -16,6 +17,10 @@ export interface MultiplayerGame {
   player_id_red: string;
   green_ready: PlayerStatus;
   player_id_green: string;
+  move_number: number;
+  made_move: string;
+  board: string;
+  current_player: Player;
 }
 
 // Create a game instance and navigate to it.
@@ -44,9 +49,13 @@ const CreateGame = () => {
           game_creator: user.id,
           player_count: 0,
           red_ready: "tentative",
-          player_id_red: user.id,
+          player_id_red: "",
           green_ready: "tentative",
-          player_id_green: user.id,
+          player_id_green: "",
+          move_number: 0,
+          made_move: "",
+          board: "",
+          current_player: "red",
         },
       ])
       .select();
@@ -60,9 +69,13 @@ const CreateGame = () => {
         game_creator: user.id,
         player_count: 0,
         red_ready: "tentative",
-        player_id_red: user.id,
+        player_id_red: "",
         green_ready: "tentative",
-        player_id_green: user.id,
+        player_id_green: "",
+        move_number: 0,
+        made_move: "",
+        board: "",
+        current_player: "red",
       };
       setCreatedGame(newGame);
       console.log("Game created successfully, navigating to the game room...");

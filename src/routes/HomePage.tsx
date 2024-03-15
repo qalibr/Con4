@@ -1,5 +1,4 @@
 import GameComponent from "../confourComponents/GameComponent.tsx";
-import MultiplayerGameComponent from "@/confourComponents/multiplayer/MultiplayerGameComponent.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import Lobby from "@/confourComponents/multiplayer/lobby.tsx";
 
@@ -10,7 +9,6 @@ function HomePage() {
     <>
       {user ? (
         <div>
-          <MultiplayerGameComponent />
           <Lobby />
         </div>
       ) : (
