@@ -31,7 +31,6 @@ const Lobby = () => {
     };
 
     // Subscribe to game presence, so that we can see how many player's are in each game instance.
-    // TODO: In GamePage make sure we decrement player_count when player's leave a page.
     const subscribeToGamePresence = (games: MultiplayerGame[]) => {
       gameChannels.forEach((channel) => channel.unsubscribe());
       gameChannels = [];

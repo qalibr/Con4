@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import supabase from "@/supabaseClient.tsx";
+import useAuth from "@/confourHooks/useAuth.tsx";
+import GameInstance from "@/confourComponents/multiplayer/game-instance.tsx";
 
 // GamePage to render whatever we need in the game room instance
 const GamePage = () => {
+  const { user } = useAuth();
   const { gameId } = useParams();
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
@@ -42,6 +45,8 @@ const GamePage = () => {
       <h1>Game: {gameId}</h1>
       {/* @ts-expect-error it works */}
       <p>Status: {game.game_status}</p>
+
+      <GameInstance />
     </div>
   );
 };
