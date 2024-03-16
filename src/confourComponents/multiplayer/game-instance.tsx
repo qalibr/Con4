@@ -40,10 +40,12 @@ function GameInstance() {
     }
 
     // Fetching status and ID
-    const fetchPlayerInformation = async () => {
+    const fetchGameState = async () => {
       const { data, error } = await supabase
         .from("games")
-        .select("red_ready, green_ready, player_id_red, player_id_green")
+        .select(
+          "red_ready, green_ready, player_id_red, player_id_green, board, current_player",
+        )
         .eq("game_id", gameId)
         .single();
 
@@ -60,36 +62,27 @@ function GameInstance() {
         const playersReady = [data.red_ready, data.green_ready].filter(
           (status) => status === "ready",
         ).length;
-        console.log("Setting readyPlayers: ", playersReady);
         setReadyPlayers(playersReady);
+
+        // Fetch board state
+        const updatedBoard = JSON.parse(data.board) as TokenBoard;
+        setBoard(updatedBoard);
+
+        // Fetch player turn
+        setCurrentPlayer(data.current_player);
+
+        console.log(
+          "Setting readyPlayers: ",
+          playersReady,
+          "\n Board state: ",
+          data.board,
+          "\n Player to go: ",
+          data.current_player,
+        );
       }
     };
 
-    fetchPlayerInformation();
-
-    // const boardStatusChannel = supabase
-    //   .channel(`game-status:${gameId}`)
-    //   .on(
-    //     "postgres_changes",
-    //     { event: "*", schema: "public", table: "games" },
-    //     (payload) => {
-    //       const newStatus = payload.new as MultiplayerGame;
-    //       console.log("Game update received:", payload);
-    //
-    //       // If we received game update and the board exists
-    //       if (newStatus && newStatus.board) {
-    //         // Type is TokenBoard, according to definition in game-logic.tsx
-    //         const newBoard = JSON.parse(newStatus.board) as TokenBoard;
-    //         setBoard(newBoard);
-    //         setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
-    //         setMoveNumber((prev: number) => prev + 1);
-    //       }
-    //       if (newStatus.current_player) {
-    //         setCurrentPlayer(newStatus.current_player);
-    //       }
-    //     },
-    //   )
-    //   .subscribe();
+    fetchGameState();
 
     const playerStatusChannel = supabase
       .channel(`game-status:${gameId}`)
@@ -134,9 +127,8 @@ function GameInstance() {
 
     return () => {
       playerStatusChannel.unsubscribe();
-      // boardStatusChannel.unsubscribe();
     };
-  }, [gameId, board, currentPlayer]);
+  }, [gameId, currentPlayer]); // BUG: Don't add Board as dependency, will cause infinite loop.
 
   const handlePlayerStatus = async () => {
     if (!user?.id || !gameId) {
@@ -144,14 +136,15 @@ function GameInstance() {
       if (user.id === null) {
         console.log("User ID is null");
       } else {
-        // @ts-expect-error yes, expected.
-        console.log("User ID: ", user.id);
+        // // @ts-expect-error yes, expected.
+        // console.log("User ID: ", user.id);
       }
       if (gameId === null) {
         console.log("Game ID is null");
       } else {
-        console.log("Game ID: ", gameId);
+        // console.log("Game ID: ", gameId);
       }
+
       return;
     }
 
@@ -172,9 +165,7 @@ function GameInstance() {
       setRedReady("ready");
       return;
     } else {
-      console.log("RED");
-      console.log("User ID: ", user.id);
-      console.log("Room has: ", readyPlayers, "/2 players");
+      console.log("Red uid: ", user.id, "\n Room: ", readyPlayers, "/2");
     }
 
     if (readyPlayers === 1 && user.id !== redId) {
@@ -197,10 +188,7 @@ function GameInstance() {
       if (user.id === redId) {
         console.log("Red cannot claim green ID as well");
       }
-
-      console.log("GREEN");
-      console.log("User ID: ", user.id);
-      console.log("Room has: ", readyPlayers, "/2 players");
+      console.log("Green uid: ", user.id, "\n Room: ", readyPlayers, "/2");
     }
   };
 
@@ -210,13 +198,13 @@ function GameInstance() {
       if (user.id === null) {
         console.log("User ID is null");
       } else {
-        // @ts-expect-error yes, expected.
-        console.log("User ID: ", user.id);
+        // // @ts-expect-error yes, expected.
+        // console.log("User ID: ", user.id);
       }
       if (gameId === null) {
         console.log("Game ID is null");
       } else {
-        console.log("Game ID: ", gameId);
+        // console.log("Game ID: ", gameId);
       }
       return;
     }
@@ -231,9 +219,11 @@ function GameInstance() {
       (currentPlayer === "red" && user.id !== redId) ||
       (currentPlayer === "green" && user.id !== greenId)
     ) {
-      console.log("Player cannot move out of turn.");
-      console.log("Who's to go next: ", currentPlayer);
-      console.log("Attempt made by ID: ", user.id);
+      // console.log("Player cannot move out of turn.");
+      // console.log("Who's to go next: ", currentPlayer);
+      // console.log("Attempt made by ID: ", user.id);
+
+      console.log("Not your turn.");
       return;
     } else if (
       (currentPlayer === "red" && user.id === redId) ||
@@ -280,6 +270,9 @@ function GameInstance() {
       setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
       setMoveNumber((prev) => prev + 1);
     }
+
+    // TODO: Add subscription here to update game state based on new board.
+    // TODO: When that is done the board state stuff in playerStatusChannel might not be needed.
   };
 
   return (
