@@ -32,28 +32,31 @@ function GameInstance() {
   const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
   const [moveNumber, setMoveNumber] = useState<number>(0);
 
-  // Realtime database handling game instances
-  // Currently allows players to set their ready status,
-  // this way we can assign IDs to the colors.
-  // Check for winner of the game
   useEffect(() => {
+    // Checking for a winner
     const winner = checkBoardState(board);
     if (winner) {
       setGameStatus(winner);
     }
 
-    const fetchPlayerStatus = async () => {
+    // Fetching status and ID
+    const fetchPlayerInformation = async () => {
       const { data, error } = await supabase
         .from("games")
-        .select("red_ready, green_ready")
+        .select("red_ready, green_ready, player_id_red, player_id_green")
         .eq("game_id", gameId)
         .single();
 
       if (error) {
         console.error("Error fetching player status:", error);
       } else if (data) {
+        // Fetching status and id from table
         setRedReady(data.red_ready);
+        setRedId(data.player_id_red);
         setGreenReady(data.green_ready);
+        setGreenId(data.player_id_green);
+
+        // Using filter to increment playersReady when status becomes "ready"
         const playersReady = [data.red_ready, data.green_ready].filter(
           (status) => status === "ready",
         ).length;
@@ -62,28 +65,31 @@ function GameInstance() {
       }
     };
 
-    fetchPlayerStatus();
+    fetchPlayerInformation();
 
-    const boardStatusChannel = supabase
-      .channel(`game-status:${gameId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "games" },
-        (payload) => {
-          console.log("Game update received:", payload);
-          const newStatus = payload.new as MultiplayerGame;
-          if (newStatus && newStatus.board) {
-            const newBoard = JSON.parse(newStatus.board) as TokenBoard;
-            setBoard(newBoard);
-            setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
-            setMoveNumber((prev: number) => prev + 1);
-          }
-          if (newStatus.current_player) {
-            setCurrentPlayer(newStatus.current_player);
-          }
-        },
-      )
-      .subscribe();
+    // const boardStatusChannel = supabase
+    //   .channel(`game-status:${gameId}`)
+    //   .on(
+    //     "postgres_changes",
+    //     { event: "*", schema: "public", table: "games" },
+    //     (payload) => {
+    //       const newStatus = payload.new as MultiplayerGame;
+    //       console.log("Game update received:", payload);
+    //
+    //       // If we received game update and the board exists
+    //       if (newStatus && newStatus.board) {
+    //         // Type is TokenBoard, according to definition in game-logic.tsx
+    //         const newBoard = JSON.parse(newStatus.board) as TokenBoard;
+    //         setBoard(newBoard);
+    //         setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
+    //         setMoveNumber((prev: number) => prev + 1);
+    //       }
+    //       if (newStatus.current_player) {
+    //         setCurrentPlayer(newStatus.current_player);
+    //       }
+    //     },
+    //   )
+    //   .subscribe();
 
     const playerStatusChannel = supabase
       .channel(`game-status:${gameId}`)
@@ -91,17 +97,36 @@ function GameInstance() {
         "postgres_changes",
         { event: "*", schema: "public", table: "games" },
         (payload) => {
-          console.log("Player status update received:", payload);
           const newStatus = payload.new as MultiplayerGame;
           if (newStatus) {
             console.log("Player status update received: ", newStatus);
             setRedReady(newStatus.red_ready);
+            setRedId(newStatus.player_id_red);
             setGreenReady(newStatus.green_ready);
+            setGreenId(newStatus.player_id_green);
             const playersReady = [
               newStatus.red_ready,
+              newStatus.player_id_red,
               newStatus.green_ready,
+              newStatus.player_id_green,
             ].filter((status) => status === "ready").length;
             setReadyPlayers(playersReady);
+          }
+
+          if (newStatus.board) {
+            try {
+              const updatedBoard = JSON.parse(newStatus.board) as TokenBoard;
+              setBoard(updatedBoard);
+
+              setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
+              setMoveNumber((prev: number) => prev + 1);
+            } catch (error) {
+              console.error("Error parsing board data:", error);
+            }
+          }
+
+          if (newStatus.current_player) {
+            setCurrentPlayer(newStatus.current_player);
           }
         },
       )
@@ -109,7 +134,7 @@ function GameInstance() {
 
     return () => {
       playerStatusChannel.unsubscribe();
-      boardStatusChannel.unsubscribe();
+      // boardStatusChannel.unsubscribe();
     };
   }, [gameId, board, currentPlayer]);
 
@@ -217,25 +242,18 @@ function GameInstance() {
       console.log(currentPlayer, " has made their move.");
     }
 
-    const newBoard = [...board];
-    let moveMade = false;
+    const newBoard = [...board] as TokenBoard;
     for (let i = 0; i <= newBoard[columnIndex].length - 1; i++) {
       if (newBoard[columnIndex][i] === undefined) {
         newBoard[columnIndex][i] = currentPlayer; // Place token on board
-        moveMade = true;
         break;
       }
-    }
-
-    if (!moveMade) {
-      console.log("Column is full.");
-      return;
     }
 
     // Update board state and switch players
     setBoard(newBoard);
 
-    // Update board, swap player turns and increment move number
+    // Update board in table, swap player turns and increment move number
     await updateGameBoard(newBoard);
   };
 
@@ -255,9 +273,10 @@ function GameInstance() {
       console.error("Error updating game board:", error);
     } else {
       // If the board update was successful, update the local state
-      console.log("Update successful");
+      console.log("Board update successful");
       console.log("Current player: ", currentPlayer);
       console.log("Move number: ", moveNumber);
+      console.log("Board: ", serializedBoard);
       setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
       setMoveNumber((prev) => prev + 1);
     }
