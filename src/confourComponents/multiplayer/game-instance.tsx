@@ -33,11 +33,12 @@ function GameInstance() {
 
   useEffect(() => {
     // Checking for a winner
-    // BUG: Doesn't end game when 4 in a row occurs
     const winner = checkBoardState(board);
-    if (winner) {
+    if (winner === "red" || winner === "green") {
+      console.log("!! Winner is: ", winner);
       setGameStatus(winner);
     }
+    // TODO: Test if draw works.
 
     const fetchGameState = async () => {
       const { data, error } = await supabase
