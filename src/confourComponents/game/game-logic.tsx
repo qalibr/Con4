@@ -1,3 +1,5 @@
+import { columns } from "@/confourComponents/friendlist/columns.tsx";
+
 export type Player = "red" | "green";
 export type Token = undefined | null | Player; // Undefined means open spot, Player means token is there or not.
 export type TokenBoard = Token[][]; // Map of tokens
@@ -80,17 +82,14 @@ export function checkBoardState(
     }
   }
 
+  console.log("Board: ", board);
   // Check for draw
-  if (
-    board.every((column) => column.every((cell) => cell !== undefined || true))
-  ) {
+  if (board.every((column) => column.every((cell) => cell !== undefined))) {
     return "draw";
   }
 
   // Check if game is in progress
-  if (
-    !board.every((column) => column.every((cell) => cell !== undefined || true))
-  ) {
+  if (!board.every((column) => column.every((cell) => cell !== undefined))) {
     return "inProgress";
   }
 

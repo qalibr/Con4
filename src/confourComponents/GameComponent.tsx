@@ -18,7 +18,7 @@ function GameComponent() {
 
   useEffect(() => {
     const winner = checkBoardState(board);
-    if (winner) {
+    if (winner === "red" || winner === "green" || winner === "draw") {
       setGameStatus(winner); // Possible: red, green or draw.
     }
   }, [board]);
