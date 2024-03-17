@@ -17,6 +17,7 @@ import {
   updateFriend,
 } from "@/confourComponents/friendlist/friends-db.tsx";
 import { Friend } from "@/confourComponents/friendlist/types.tsx";
+import useAuth from "@/confourHooks/useAuth.tsx";
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -41,12 +42,24 @@ export function FriendForm({ initialData, onSubmitSuccess }: FriendFormProps) {
     },
   });
 
+  const { user } = useAuth();
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user?.id) {
+      console.error("User ID is missing");
+      return;
+    }
+
+    const payload = { ...values, user_id: user.id } as Omit<Friend, "id">;
+
     let result;
-    if (initialData?.id) {
-      result = await updateFriend(initialData.id, values);
+    if (initialData?.id && user?.id) {
+      result = await updateFriend(initialData.id, payload, user.id);
+    } else if (user?.id) {
+      result = await addFriend(payload, user.id);
     } else {
-      result = await addFriend(values);
+      console.error("User ID is missing");
+      return;
     }
 
     if (result.error) {

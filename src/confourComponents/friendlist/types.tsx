@@ -3,4 +3,5 @@ export interface Friend {
   username: string;
   status: "online" | "offline" | "away" | "dnd";
   email: string;
+  user_id: string;
 }

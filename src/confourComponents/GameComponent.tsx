@@ -1,3 +1,5 @@
+// NOTE: base for singleplayer, different version will be used for multiplayer
+
 import React, { useEffect, useState } from "react";
 import {
   checkBoardState,

@@ -22,6 +22,7 @@ const expectedDependencies = {
   "@radix-ui/react-slot": "^1.0.2",
   "@supabase/supabase-js": "^2.39.3",
   "@tanstack/react-table": "^8.12.0",
+  "@types/uuid": "^9.0.8",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.1.0",
   "lucide-react": "^0.323.0",
@@ -32,6 +33,7 @@ const expectedDependencies = {
   "react-router-dom": "^6.22.0",
   "tailwind-merge": "^2.2.1",
   "tailwindcss-animate": "^1.0.7",
+  uuid: "^9.0.1",
   zod: "^3.22.4",
 };
 
