@@ -37,14 +37,17 @@ function GameInstance() {
     if (winner === "red" || winner === "green") {
       console.log("!! Winner is: ", winner);
       setGameStatus(winner);
+    } else if (moveNumber === 42) {
+      setGameStatus("draw"); // Checking for draw using move count instead.
     }
-    // TODO: Test if draw works.
+
+    // console.log("Move Number: ", moveNumber);
 
     const fetchGameState = async () => {
       const { data, error } = await supabase
         .from("games")
         .select(
-          "red_ready, green_ready, player_id_red, player_id_green, board, current_player", // Fetching from "games"
+          "red_ready, green_ready, player_id_red, player_id_green, board, current_player, move_number", // Fetching from "games"
         )
         .eq("game_id", gameId) // For game ID
         .single(); // one row
@@ -64,6 +67,7 @@ function GameInstance() {
 
         // Fetch board state
         if (data.board) {
+          setMoveNumber(data.move_number);
           try {
             const updatedBoard = JSON.parse(data.board) as TokenBoard;
             setBoard(updatedBoard);
@@ -119,7 +123,7 @@ function GameInstance() {
               setBoard(updatedBoard);
 
               setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
-              setMoveNumber((prev: number) => prev + 1);
+              setMoveNumber((prev: number) => prev);
             } catch (error) {
               console.error("Error parsing board data:", error);
             }
@@ -307,6 +311,7 @@ function GameInstance() {
           <h2>Green player: {greenReady}</h2>
           <h2>Green ID: {greenId}</h2>
         </li>
+        <li>Move Number: {moveNumber}</li>
       </ul>
 
       {/* Clickable columns */}
