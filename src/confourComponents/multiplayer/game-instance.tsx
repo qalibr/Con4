@@ -7,14 +7,14 @@ import useAuth from "@/confourHooks/useAuth.tsx";
 
 import {
   checkBoardState,
-  GameStatus,
   generateEmptyBoard,
   Player,
   TokenBoard,
 } from "../game/game-logic.tsx";
 import { MultiplayerGame } from "@/confourComponents/multiplayer/create-game.tsx";
-
-export type PlayerStatus = "ready" | "tentative";
+import { PlayerStatus } from "@/confourComponents/multiplayer/PlayerStatus.tsx";
+import { InstanceStatus } from "@/confourComponents/multiplayer/InstanceStatus.tsx";
+import { GameStatus } from "@/confourComponents/multiplayer/GameStatus.tsx";
 
 function GameInstance() {
   // Player status
@@ -29,25 +29,39 @@ function GameInstance() {
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
+  const [instanceStatus, setInstanceStatus] =
+    useState<InstanceStatus>("waiting");
   const [moveNumber, setMoveNumber] = useState<number>(0);
 
+  // temp
+  const [gameOver, setGameOver] = useState<boolean>(false);
+  const [gameState, setGameState] = useState<boolean>(false);
+
   useEffect(() => {
+    console.log("-----\nMARCO");
     // Checking for a winner
     const winner = checkBoardState(board);
+    console.log("GAMESTATUS: ", gameStatus);
+    console.log("GAMEOVER: ", gameOver);
+    console.log("GAMESTATE: ", gameState);
+    console.log("BOARD STATE: ", winner);
     if (winner === "red" || winner === "green") {
-      console.log("!! Winner is: ", winner);
+      // console.log("!! Winner is: ", winner);
       setGameStatus(winner);
+      setInstanceStatus("ended");
     } else if (moveNumber === 42) {
       setGameStatus("draw"); // Checking for draw using move count instead.
+      setInstanceStatus("ended");
+    } else {
+      setGameStatus("inProgress");
+      // setInstanceStatus("active");
     }
-
-    // console.log("Move Number: ", moveNumber);
 
     const fetchGameState = async () => {
       const { data, error } = await supabase
         .from("games")
         .select(
-          "red_ready, green_ready, player_id_red, player_id_green, board, current_player, move_number", // Fetching from "games"
+          "red_ready, green_ready, player_id_red, player_id_green, board, current_player, move_number, instance_status, player_count, game_status", // Fetching from "games"
         )
         .eq("game_id", gameId) // For game ID
         .single(); // one row
@@ -60,14 +74,16 @@ function GameInstance() {
         setRedId(data.player_id_red);
         setGreenReady(data.green_ready);
         setGreenId(data.player_id_green);
-        const playersReady = [data.red_ready, data.green_ready].filter(
-          (status) => status === "ready",
-        ).length;
-        setReadyPlayers(playersReady);
+        setMoveNumber(data.move_number);
+        setCurrentPlayer(data.current_player);
+        setInstanceStatus(data.instance_status);
+        setGameStatus(data.game_status);
+        // console.log("Instance Status: ", data.instance_status);
+        setReadyPlayers(data.player_count);
+        // console.log("Ready Players: ", data.player_count);
 
         // Fetch board state
         if (data.board) {
-          setMoveNumber(data.move_number);
           try {
             const updatedBoard = JSON.parse(data.board) as TokenBoard;
             setBoard(updatedBoard);
@@ -75,22 +91,11 @@ function GameInstance() {
             console.error("Error parsing board data: ", parseErr);
           }
         }
-        // Fetch player turn
-        setCurrentPlayer(data.current_player);
-
-        // Summary of fetched items
-        console.log(
-          "Setting readyPlayers: ",
-          playersReady,
-          // "\n Board state: ",
-          // data.board,
-          "\n Player to go: ",
-          data.current_player,
-        );
       }
     };
 
     fetchGameState();
+    updateGameInstance();
 
     // Listening for realtime changes and updating state variables
     const playerStatusChannel = supabase
@@ -107,13 +112,16 @@ function GameInstance() {
             setRedId(newStatus.player_id_red);
             setGreenReady(newStatus.green_ready);
             setGreenId(newStatus.player_id_green);
-            const playersReady = [
-              newStatus.red_ready,
-              newStatus.player_id_red,
-              newStatus.green_ready,
-              newStatus.player_id_green,
-            ].filter((status) => status === "ready").length;
-            setReadyPlayers(playersReady);
+            setReadyPlayers(newStatus.player_count);
+            setInstanceStatus(newStatus.instance_status);
+            setGameStatus(newStatus.game_status);
+            // console.log(
+            //   "Instance Status (Channel): ",
+            //   newStatus.instance_status,
+            // );
+            // console.log("Game Status (Channel): ", gameStatus);
+          } else {
+            console.log("Error listening to updates on playerStatusChannel");
           }
 
           // Setting board state
@@ -132,11 +140,14 @@ function GameInstance() {
           // Changing current player
           if (newStatus.current_player) {
             setCurrentPlayer(newStatus.current_player);
+          } else {
+            console.log("Error listening for changes to current player.");
           }
         },
       )
       .subscribe();
 
+    console.log("POLO");
     return () => {
       playerStatusChannel.unsubscribe();
     };
@@ -154,11 +165,12 @@ function GameInstance() {
 
     // First player to hit Ready button will become red player and have move 0.
     if (readyPlayers === 0) {
+      // setInstanceStatus("waiting");
       const { error } = await supabase
         .from("games")
         .update([
           {
-            player_count: readyPlayers,
+            player_count: readyPlayers + 1,
             red_ready: "ready",
             player_id_red: user?.id,
           },
@@ -175,18 +187,20 @@ function GameInstance() {
       setRedReady("ready");
       return;
     } else {
-      console.log("Red uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
+      // console.log("Red uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
     }
 
     // Second player to hit ready button becomes the green player.
     if (readyPlayers === 1 && user?.id !== redId) {
+      // setInstanceStatus("active");
       const { error } = await supabase
         .from("games")
         .update([
           {
-            player_count: readyPlayers,
+            player_count: readyPlayers + 1,
             green_ready: "ready",
             player_id_green: user?.id,
+            // instance_status: instanceStatus,
           },
         ])
         .eq("game_id", gameId);
@@ -202,9 +216,9 @@ function GameInstance() {
       return;
     } else {
       if (user?.id === redId) {
-        console.log("Red cannot claim green ID as well");
+        // console.log("Red cannot claim green ID as well");
       }
-      console.log("Green uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
+      // console.log("Green uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
     }
   };
 
@@ -228,13 +242,13 @@ function GameInstance() {
       (currentPlayer === "red" && user?.id !== redId) ||
       (currentPlayer === "green" && user?.id !== greenId)
     ) {
-      console.log("Not your turn.");
+      // console.log("Not your turn.");
       return;
     } else if (
       (currentPlayer === "red" && user?.id === redId) ||
       (currentPlayer === "green" && user?.id === greenId)
     ) {
-      console.log(currentPlayer, " has made his move.");
+      // console.log(currentPlayer, " has made his move.");
     }
 
     const newBoard = board.map((column) => [...column]);
@@ -246,7 +260,7 @@ function GameInstance() {
         newBoard[columnIndex][i] === undefined ||
         newBoard[columnIndex][i] === null
       ) {
-        console.log(`Placing token at: ${i}`);
+        // console.log(`Placing token at: ${i}`);
         newBoard[columnIndex][i] = currentPlayer;
         placed = true;
         break;
@@ -254,7 +268,7 @@ function GameInstance() {
     }
 
     if (!placed) {
-      console.log("Column is full.");
+      // console.log("Column is full.");
       return;
     }
 
@@ -274,16 +288,41 @@ function GameInstance() {
         board: serializedBoard,
         move_number: moveNumber + 1,
         current_player: currentPlayer === "red" ? "green" : "red",
+        game_status: gameStatus,
       })
       .eq("game_id", gameId);
 
     if (error) {
       console.error("Error updating game board:", error);
-    } else {
-      console.log("Board update successful");
-      setCurrentPlayer(currentPlayer === "red" ? "green" : "red");
-      setMoveNumber((prev) => prev + 1);
-      setBoard(newBoard);
+    }
+  };
+
+  const updateGameInstance = async () => {
+    if (
+      gameStatus !== "inProgress" ||
+      gameStatus === "red" ||
+      gameStatus === "green"
+    ) {
+      setGameOver(true);
+    }
+    console.log("GAME OVER: ", gameOver);
+
+    if (readyPlayers === 2) {
+      setGameState(true);
+    }
+    console.log("READY: ", gameState, ".. COUNT: ", readyPlayers);
+
+    const { error } = await supabase
+      .from("games")
+      .update({
+        instance_status: gameOver ? "ended" : gameState ? "active" : "waiting",
+      })
+      .eq("game_id", gameId);
+
+    setInstanceStatus(gameOver ? "ended" : gameState ? "active" : "waiting");
+
+    if (error) {
+      console.error("Error updating Game Instance status: ", error);
     }
   };
 
@@ -302,6 +341,12 @@ function GameInstance() {
           {readyPlayers < 2 && (
             <Button onClick={handlePlayerStatus}>Ready</Button>
           )}
+        </li>
+        <li>
+          <h1>
+            Game: {gameId}
+            <p>Status: {instanceStatus}</p>
+          </h1>
         </li>
         <li>
           <h2>Red player: {redReady}</h2>

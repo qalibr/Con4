@@ -20,7 +20,7 @@ const Lobby = () => {
       const { data: games, error } = await supabase
         .from("games")
         .select("*")
-        .eq("game_status", "waiting");
+        .eq("instance_status", "waiting");
 
       if (error) {
         console.error("Error fetching games: ", error);

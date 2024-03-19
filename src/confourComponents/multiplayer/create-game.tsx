@@ -5,12 +5,14 @@ import supabase from "@/supabaseClient.tsx";
 import { v4 as uuidv4 } from "uuid";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
-import { PlayerStatus } from "@/confourComponents/multiplayer/game-instance.tsx";
+import { PlayerStatus } from "@/confourComponents/multiplayer/PlayerStatus.tsx";
 import { Player } from "@/confourComponents/game/game-logic.tsx";
+import { InstanceStatus } from "@/confourComponents/multiplayer/InstanceStatus.tsx";
+import { GameStatus } from "@/confourComponents/multiplayer/GameStatus.tsx";
 
 export interface MultiplayerGame {
   game_id: string;
-  game_status: "waiting" | "active" | "ended";
+  instance_status: InstanceStatus;
   game_creator: string;
   player_count: number;
   red_ready: PlayerStatus;
@@ -21,6 +23,7 @@ export interface MultiplayerGame {
   made_move: string;
   board: string;
   current_player: Player;
+  game_status: GameStatus;
 }
 
 // Create a game instance and navigate to it.
@@ -45,7 +48,7 @@ const CreateGame = () => {
       .insert([
         {
           game_id: gameId,
-          game_status: "waiting",
+          instance_status: "waiting",
           game_creator: user.id,
           player_count: 0,
           red_ready: "tentative",
@@ -56,6 +59,7 @@ const CreateGame = () => {
           made_move: "",
           board: "",
           current_player: "red",
+          game_status: "inProgress"
         },
       ])
       .select();
@@ -65,7 +69,7 @@ const CreateGame = () => {
     } else {
       const newGame: MultiplayerGame = {
         game_id: gameId,
-        game_status: "waiting",
+        instance_status: "waiting",
         game_creator: user.id,
         player_count: 0,
         red_ready: "tentative",
@@ -76,6 +80,7 @@ const CreateGame = () => {
         made_move: "",
         board: "",
         current_player: "red",
+        game_status: "inProgress",
       };
       setCreatedGame(newGame);
       console.log("Game created successfully, navigating to the game room...");

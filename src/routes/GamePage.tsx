@@ -42,9 +42,8 @@ const GamePage = () => {
 
   return (
     <div>
-      <h1>Game: {gameId}</h1>
-      {/* @ts-expect-error it works */}
-      <p>Status: {game.game_status}</p>
+      {/*<h1>Game: {gameId}</h1>*/}
+      {/*<p>Status: {game.instance_status}</p>*/}
 
       <GameInstance />
     </div>
