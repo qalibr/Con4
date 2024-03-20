@@ -5,33 +5,14 @@ import supabase from "@/supabaseClient.tsx";
 import { v4 as uuidv4 } from "uuid";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
-import { PlayerStatus } from "@/confourComponents/multiplayer/PlayerStatus.tsx";
-import { Player } from "@/confourComponents/game/game-logic.tsx";
-import { InstanceStatus } from "@/confourComponents/multiplayer/InstanceStatus.tsx";
-import { GameStatus } from "@/confourComponents/multiplayer/GameStatus.tsx";
-
-export interface MultiplayerGame {
-  game_id: string;
-  instance_status: InstanceStatus;
-  game_creator: string;
-  player_count: number;
-  red_ready: PlayerStatus;
-  player_id_red: string;
-  green_ready: PlayerStatus;
-  player_id_green: string;
-  move_number: number;
-  made_move: string;
-  board: string;
-  current_player: Player;
-  game_status: GameStatus;
-}
+import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 
 // Create a game instance and navigate to it.
 const CreateGame = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   // eslint-disable-next-line
-  const [createdGame, setCreatedGame] = useState<MultiplayerGame | null>(null);
+  const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
 
   const handleCreateGame = async () => {
     if (!user) {
@@ -59,7 +40,7 @@ const CreateGame = () => {
           made_move: "",
           board: "",
           current_player: "red",
-          game_status: "inProgress"
+          game_status: "inProgress",
         },
       ])
       .select();
@@ -67,7 +48,7 @@ const CreateGame = () => {
     if (error) {
       console.error("Error creating a new game:", error);
     } else {
-      const newGame: MultiplayerGame = {
+      const newGame: IMultiplayerGame = {
         game_id: gameId,
         instance_status: "waiting",
         game_creator: user.id,

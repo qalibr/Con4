@@ -5,16 +5,15 @@ import { Alert } from "@/components/ui/alert.tsx";
 import { useParams } from "react-router-dom";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
+import { checkBoardState, generateEmptyBoard } from "../game/game-logic.tsx";
+import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 import {
-  checkBoardState,
-  generateEmptyBoard,
+  PlayerStatus,
+  InstanceStatus,
+  GameStatus,
   Player,
   TokenBoard,
-} from "../game/game-logic.tsx";
-import { MultiplayerGame } from "@/confourComponents/multiplayer/create-game.tsx";
-import { PlayerStatus } from "@/confourComponents/multiplayer/PlayerStatus.tsx";
-import { InstanceStatus } from "@/confourComponents/multiplayer/InstanceStatus.tsx";
-import { GameStatus } from "@/confourComponents/multiplayer/GameStatus.tsx";
+} from "@/confourComponents/multiplayer/multiplayer-types.tsx";
 
 function GameInstance() {
   // Player status
@@ -33,30 +32,7 @@ function GameInstance() {
     useState<InstanceStatus>("waiting");
   const [moveNumber, setMoveNumber] = useState<number>(0);
 
-  // temp
-  const [gameOver, setGameOver] = useState<boolean>(false);
-  const [gameState, setGameState] = useState<boolean>(false);
-
   useEffect(() => {
-    console.log("-----\nMARCO");
-    // Checking for a winner
-    const winner = checkBoardState(board);
-    console.log("GAMESTATUS: ", gameStatus);
-    console.log("GAMEOVER: ", gameOver);
-    console.log("GAMESTATE: ", gameState);
-    console.log("BOARD STATE: ", winner);
-    if (winner === "red" || winner === "green") {
-      // console.log("!! Winner is: ", winner);
-      setGameStatus(winner);
-      setInstanceStatus("ended");
-    } else if (moveNumber === 42) {
-      setGameStatus("draw"); // Checking for draw using move count instead.
-      setInstanceStatus("ended");
-    } else {
-      setGameStatus("inProgress");
-      // setInstanceStatus("active");
-    }
-
     const fetchGameState = async () => {
       const { data, error } = await supabase
         .from("games")
@@ -78,9 +54,8 @@ function GameInstance() {
         setCurrentPlayer(data.current_player);
         setInstanceStatus(data.instance_status);
         setGameStatus(data.game_status);
-        // console.log("Instance Status: ", data.instance_status);
+        console.log("Fetching gameStatus: ", data.game_status, gameStatus);
         setReadyPlayers(data.player_count);
-        // console.log("Ready Players: ", data.player_count);
 
         // Fetch board state
         if (data.board) {
@@ -95,7 +70,6 @@ function GameInstance() {
     };
 
     fetchGameState();
-    updateGameInstance();
 
     // Listening for realtime changes and updating state variables
     const playerStatusChannel = supabase
@@ -104,7 +78,7 @@ function GameInstance() {
         "postgres_changes",
         { event: "*", schema: "public", table: "games" },
         (payload) => {
-          const newStatus = payload.new as MultiplayerGame;
+          const newStatus = payload.new as IMultiplayerGame;
           if (newStatus) {
             // console.log("Player status update received: ", newStatus);
             // Setting player status
@@ -115,11 +89,11 @@ function GameInstance() {
             setReadyPlayers(newStatus.player_count);
             setInstanceStatus(newStatus.instance_status);
             setGameStatus(newStatus.game_status);
-            // console.log(
-            //   "Instance Status (Channel): ",
-            //   newStatus.instance_status,
-            // );
-            // console.log("Game Status (Channel): ", gameStatus);
+            console.log(
+              "Listening gameStatus: ",
+              newStatus.game_status,
+              gameStatus,
+            );
           } else {
             console.log("Error listening to updates on playerStatusChannel");
           }
@@ -147,12 +121,81 @@ function GameInstance() {
       )
       .subscribe();
 
-    console.log("POLO");
     return () => {
       playerStatusChannel.unsubscribe();
     };
   }, [gameId, currentPlayer]); // BUG: Don't add Board as dependency, will cause infinite loop.
 
+  useEffect(() => {
+    const checkStatus = async () => {
+      const winner = checkBoardState(board);
+      if (winner === "red") {
+        const newGameStatus = "red";
+        const newInstanceStatus = "ended";
+        setGameStatus(newGameStatus);
+        await updateGameStatus(gameId, newGameStatus);
+        await updateInstanceStatus(gameId, newInstanceStatus);
+        return;
+      } else if (winner === "green") {
+        const newGameStatus = "green";
+        const newInstanceStatus = "ended";
+        setGameStatus(newGameStatus);
+        await updateGameStatus(gameId, newGameStatus);
+        await updateInstanceStatus(gameId, newInstanceStatus);
+        return;
+      } else if (moveNumber === 42) {
+        const newGameStatus = "draw";
+        const newInstanceStatus = "ended";
+        setGameStatus(newGameStatus);
+        await updateGameStatus(gameId, newGameStatus);
+        await updateInstanceStatus(gameId, newInstanceStatus);
+        return;
+      } else if (greenReady === "ready" && redReady === "ready") {
+        const newGameStatus = "inProgress";
+        const newInstanceStatus = "active";
+        await updateGameStatus(gameId, newGameStatus);
+        await updateInstanceStatus(gameId, newInstanceStatus);
+        await updatePlayerStatus(gameId, "ready");
+        return;
+      }
+    };
+
+    checkStatus();
+  }, [moveNumber]);
+
+  const updateGameStatus = async (
+    gameId: string | undefined,
+    newGameStatus: GameStatus,
+  ) => {
+    const { error } = await supabase
+      .from("games")
+      .update({
+        game_status: newGameStatus,
+      })
+      .eq("game_id", gameId);
+
+    if (error) {
+      console.error("Error updating game status", error);
+    }
+  };
+
+  const updateInstanceStatus = async (
+    gameId: string | undefined,
+    newInstanceStatus: InstanceStatus,
+  ) => {
+    const { error } = await supabase
+      .from("games")
+      .update({
+        instance_status: newInstanceStatus,
+      })
+      .eq("game_id", gameId);
+
+    if (error) {
+      console.error("Error updating instance status", error);
+    }
+  };
+
+  // Does nothing when readyPlayers !== 0 || !== 1
   const handlePlayerStatus = async () => {
     if (user?.id === null) {
       console.log("User ID is null");
@@ -186,13 +229,10 @@ function GameInstance() {
       setReadyPlayers((prev: number) => prev + 1);
       setRedReady("ready");
       return;
-    } else {
-      // console.log("Red uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
     }
 
     // Second player to hit ready button becomes the green player.
     if (readyPlayers === 1 && user?.id !== redId) {
-      // setInstanceStatus("active");
       const { error } = await supabase
         .from("games")
         .update([
@@ -200,7 +240,6 @@ function GameInstance() {
             player_count: readyPlayers + 1,
             green_ready: "ready",
             player_id_green: user?.id,
-            // instance_status: instanceStatus,
           },
         ])
         .eq("game_id", gameId);
@@ -214,11 +253,23 @@ function GameInstance() {
       setReadyPlayers((prev: number) => prev + 1);
       setGreenReady("ready");
       return;
-    } else {
-      if (user?.id === redId) {
-        // console.log("Red cannot claim green ID as well");
-      }
-      // console.log("Green uid: ", user?.id, "\n Room: ", readyPlayers, "/2");
+    }
+  };
+
+  const updatePlayerStatus = async (
+      gameId: string | undefined,
+      newPlayerStatus: PlayerStatus,
+  ) => {
+    const {error} = await supabase
+        .from("games")
+        .update({
+          red_ready: newPlayerStatus,
+          green_ready: newPlayerStatus,
+        })
+        .eq("game_id", gameId);
+
+    if (error) {
+      console.error("Error updating player status", error);
     }
   };
 
@@ -288,41 +339,11 @@ function GameInstance() {
         board: serializedBoard,
         move_number: moveNumber + 1,
         current_player: currentPlayer === "red" ? "green" : "red",
-        game_status: gameStatus,
       })
       .eq("game_id", gameId);
 
     if (error) {
       console.error("Error updating game board:", error);
-    }
-  };
-
-  const updateGameInstance = async () => {
-    if (
-      gameStatus !== "inProgress" ||
-      gameStatus === "red" ||
-      gameStatus === "green"
-    ) {
-      setGameOver(true);
-    }
-    console.log("GAME OVER: ", gameOver);
-
-    if (readyPlayers === 2) {
-      setGameState(true);
-    }
-    console.log("READY: ", gameState, ".. COUNT: ", readyPlayers);
-
-    const { error } = await supabase
-      .from("games")
-      .update({
-        instance_status: gameOver ? "ended" : gameState ? "active" : "waiting",
-      })
-      .eq("game_id", gameId);
-
-    setInstanceStatus(gameOver ? "ended" : gameState ? "active" : "waiting");
-
-    if (error) {
-      console.error("Error updating Game Instance status: ", error);
     }
   };
 

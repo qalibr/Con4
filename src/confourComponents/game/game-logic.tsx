@@ -1,8 +1,7 @@
-export type Player = "red" | "green";
-export type Token = undefined | null | Player; // Undefined means open spot, Player means token is there or not.
-export type TokenBoard = Token[][]; // Map of tokens
+import { Player } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+import { TokenBoard } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
 
-/// Generate empty board for play.
+// Generate empty board for play.
 export function generateEmptyBoard(): TokenBoard {
   // Map of tokens that can be accessed by coordinates, [x][y]
   return Array(7)
@@ -10,8 +9,8 @@ export function generateEmptyBoard(): TokenBoard {
     .map(() => Array(6).fill(undefined));
 }
 
-/// Check for winner or inconclusive board state
-/// Token represents current player's color
+// Check for winner or inconclusive board state
+// Token represents current player's color
 export function checkBoardState(
   board: TokenBoard,
 ): Player | "draw" | "inProgress" | null | undefined {
