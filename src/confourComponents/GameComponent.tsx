@@ -1,15 +1,14 @@
 // NOTE: base for singleplayer, different version will be used for multiplayer
 
 import React, { useEffect, useState } from "react";
-import {
-  checkBoardState,
-  GameStatus,
-  generateEmptyBoard,
-  Player,
-  TokenBoard,
-} from "./game/game-logic.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert } from "@/components/ui/alert.tsx";
+import { checkBoardState, generateEmptyBoard } from "./game/game-logic.tsx";
+import {
+  Player,
+  TokenBoard,
+  GameStatus,
+} from "@/confourComponents/game/types.tsx";
 
 function GameComponent() {
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());

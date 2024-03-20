@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   checkBoardState,
   generateEmptyBoard,
-  Token,
-  TokenBoard,
-  Player,
 } from "@/confourComponents/game/game-logic.tsx";
+
+import { Player, Token, TokenBoard } from "@/confourComponents/game/types.tsx";
 
 type Move = {
   columnIndex: number;

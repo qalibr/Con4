@@ -1,5 +1,4 @@
-import { Player } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
-import { TokenBoard } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+import { Player, TokenBoard } from "@/confourComponents/game/types.tsx";
 
 // Generate empty board for play.
 export function generateEmptyBoard(): TokenBoard {

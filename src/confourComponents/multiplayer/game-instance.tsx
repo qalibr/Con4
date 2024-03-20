@@ -10,10 +10,13 @@ import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGa
 import {
   PlayerStatus,
   InstanceStatus,
-  GameStatus,
+} from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+
+import {
   Player,
   TokenBoard,
-} from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+  GameStatus,
+} from "@/confourComponents/game/types.tsx";
 
 function GameInstance() {
   // Player status
@@ -257,16 +260,16 @@ function GameInstance() {
   };
 
   const updatePlayerStatus = async (
-      gameId: string | undefined,
-      newPlayerStatus: PlayerStatus,
+    gameId: string | undefined,
+    newPlayerStatus: PlayerStatus,
   ) => {
-    const {error} = await supabase
-        .from("games")
-        .update({
-          red_ready: newPlayerStatus,
-          green_ready: newPlayerStatus,
-        })
-        .eq("game_id", gameId);
+    const { error } = await supabase
+      .from("games")
+      .update({
+        red_ready: newPlayerStatus,
+        green_ready: newPlayerStatus,
+      })
+      .eq("game_id", gameId);
 
     if (error) {
       console.error("Error updating player status", error);
