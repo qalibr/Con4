@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
-import { MultiplayerGame } from "@/confourComponents/multiplayer/create-game.tsx";
+import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 import { useNavigate } from "react-router-dom";
 // import useAuth from "@/confourHooks/useAuth.tsx";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 // Display game instances with the status "waiting", and provide a method to join a game.
 const Lobby = () => {
-  const [activeGames, setActiveGames] = useState<MultiplayerGame[]>([]);
+  const [activeGames, setActiveGames] = useState<IMultiplayerGame[]>([]);
   const navigate = useNavigate();
   // const { user } = useAuth();
   // const [onlineUsers, setOnlineUsers] = useState(0);
@@ -20,7 +20,7 @@ const Lobby = () => {
       const { data: games, error } = await supabase
         .from("games")
         .select("*")
-        .eq("game_status", "waiting");
+        .eq("instance_status", "waiting");
 
       if (error) {
         console.error("Error fetching games: ", error);
@@ -31,7 +31,7 @@ const Lobby = () => {
     };
 
     // Subscribe to game presence, so that we can see how many player's are in each game instance.
-    const subscribeToGamePresence = (games: MultiplayerGame[]) => {
+    const subscribeToGamePresence = (games: IMultiplayerGame[]) => {
       gameChannels.forEach((channel) => channel.unsubscribe());
       gameChannels = [];
 

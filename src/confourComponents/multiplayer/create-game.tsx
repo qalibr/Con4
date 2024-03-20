@@ -5,30 +5,14 @@ import supabase from "@/supabaseClient.tsx";
 import { v4 as uuidv4 } from "uuid";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
-import { PlayerStatus } from "@/confourComponents/multiplayer/game-instance.tsx";
-import { Player } from "@/confourComponents/game/game-logic.tsx";
-
-export interface MultiplayerGame {
-  game_id: string;
-  game_status: "waiting" | "active" | "ended";
-  game_creator: string;
-  player_count: number;
-  red_ready: PlayerStatus;
-  player_id_red: string;
-  green_ready: PlayerStatus;
-  player_id_green: string;
-  move_number: number;
-  made_move: string;
-  board: string;
-  current_player: Player;
-}
+import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 
 // Create a game instance and navigate to it.
 const CreateGame = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   // eslint-disable-next-line
-  const [createdGame, setCreatedGame] = useState<MultiplayerGame | null>(null);
+  const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
 
   const handleCreateGame = async () => {
     if (!user) {
@@ -45,7 +29,7 @@ const CreateGame = () => {
       .insert([
         {
           game_id: gameId,
-          game_status: "waiting",
+          instance_status: "waiting",
           game_creator: user.id,
           player_count: 0,
           red_ready: "tentative",
@@ -56,6 +40,7 @@ const CreateGame = () => {
           made_move: "",
           board: "",
           current_player: "red",
+          game_status: "inProgress",
         },
       ])
       .select();
@@ -63,9 +48,9 @@ const CreateGame = () => {
     if (error) {
       console.error("Error creating a new game:", error);
     } else {
-      const newGame: MultiplayerGame = {
+      const newGame: IMultiplayerGame = {
         game_id: gameId,
-        game_status: "waiting",
+        instance_status: "waiting",
         game_creator: user.id,
         player_count: 0,
         red_ready: "tentative",
@@ -76,6 +61,7 @@ const CreateGame = () => {
         made_move: "",
         board: "",
         current_player: "red",
+        game_status: "inProgress",
       };
       setCreatedGame(newGame);
       console.log("Game created successfully, navigating to the game room...");

@@ -1,11 +1,7 @@
-import { columns } from "@/confourComponents/friendlist/columns.tsx";
+import { Player } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+import { TokenBoard } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
 
-export type Player = "red" | "green";
-export type Token = undefined | null | Player; // Undefined means open spot, Player means token is there or not.
-export type TokenBoard = Token[][]; // Map of tokens
-export type GameStatus = "inProgress" | "red" | "green" | "draw";
-
-/// Generate empty board for play.
+// Generate empty board for play.
 export function generateEmptyBoard(): TokenBoard {
   // Map of tokens that can be accessed by coordinates, [x][y]
   return Array(7)
@@ -13,8 +9,8 @@ export function generateEmptyBoard(): TokenBoard {
     .map(() => Array(6).fill(undefined));
 }
 
-/// Check for winner or inconclusive board state
-/// Token represents current player's color
+// Check for winner or inconclusive board state
+// Token represents current player's color
 export function checkBoardState(
   board: TokenBoard,
 ): Player | "draw" | "inProgress" | null | undefined {
@@ -82,8 +78,10 @@ export function checkBoardState(
     }
   }
 
-  console.log("Board: ", board);
+  // console.log("Board: ", board);
   // Check for draw
+  // BUG: With multiplayer the array is populated with nulls. If I fix this that will break the single-player checks.
+  // Resolved: Fixed multiplayer draw check by simply counting moves. Implement that here later.
   if (board.every((column) => column.every((cell) => cell !== undefined))) {
     return "draw";
   }
