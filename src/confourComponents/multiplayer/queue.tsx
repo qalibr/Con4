@@ -3,35 +3,65 @@ import supabase from "@/supabaseClient.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { v4 as uuidv4 } from "uuid";
+import { Button } from "@/components/ui/button.tsx";
 
 import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 import { IQueuedPlayer } from "@/confourComponents/multiplayer/IQueuedPlayer.tsx";
 import {
   InstanceStatus,
   PlayerStatus,
+  QueuedPlayerStatus,
 } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
-import { Button } from "@/components/ui/button.tsx";
+import {
+  GameStatus,
+  Player,
+  TokenBoard,
+} from "@/confourComponents/game/types.tsx";
+import { generateEmptyBoard } from "@/confourComponents/game/game-logic.tsx";
 
 const Queue = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Keep track of queue entries.
   const [queuedPlayers, setQueuedPlayers] = useState<IQueuedPlayer[]>([]);
+
+  // Keep track of how many players are queued.
   const [queuedCount, setQueuedCount] = useState(0);
 
+  // Queued player status. "queued", "accept", "decline"
+  const [queuedPlayerStatus, setQueuedPlayerStatus] =
+    useState<QueuedPlayerStatus>("queued");
+
+  // Variables to store player IDs
+  const [redPlayerID, setRedPlayerID] = useState<string>("");
+  const [greenPlayerID, setGreenPlayerID] = useState<string>("");
+
+  // Variables to store player status. "tentative", "ready", "declined"
+  const [redReady, setRedReady] = useState<PlayerStatus>("tentative");
+  const [greenReady, setGreenReady] = useState<PlayerStatus>("tentative");
+
   // Subject to change
-  const [playerOne, setPlayerOne] = useState<string>("");
-  const [playerTwo, setPlayerTwo] = useState<string>("");
-  const [acceptedOne, setAcceptedOne] = useState<PlayerStatus>("tentative");
-  const [acceptedTwo, setAcceptedTwo] = useState<PlayerStatus>("tentative");
   const [gameId, setGameId] = useState<string>();
+
+  // Variables to store what is relevant to the games.
   const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
+
+  // Game status. "inProgress", "red", "green", "draw"
+  const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
+
+  // Player and TokenBoard.
+  const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
+  const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
+
+  // Instance status. "waiting", "active", "ended"
   const [instanceStatus, setInstanceStatus] =
     useState<InstanceStatus>("waiting");
 
-  /* Fetch queued players and broadcast on channel
-   * This function ensures everyone is aware of who is queued and not.
-   * It records how many players are queued. */
   useEffect(() => {
+    /* Fetch queued players and broadcast on channel
+     * This function ensures everyone is aware of who is queued and not.
+     * It records how many players are queued. */
     const fetchQueuedPlayers = async () => {
       const { data, error } = await supabase
         .from("queue")
@@ -66,159 +96,41 @@ const Queue = () => {
     };
   }, []);
 
-  /* Match up players */
-  useEffect(() => {
-    // Set off trigger when the minimum is met.
-    if (queuedCount >= 2) {
-      const fetchPlayers = async () => {
-        const { data, error } = await supabase
-          .from("queue")
-          .select("queue_id, queued_player_id")
-          .eq("queue_entry_status", "queued")
-          .limit(2);
+  /* This function allows a player to enter the queue.
+   * "queued_player_id" column is set as unique, so players who are queued cannot re-queue.
+   * To ensure smooth user experience:
+   * 1. Update record when player accepts to enter a game following a popup.
+   * 2. Update record when the player presses the queue button. */
+  const handleEnterQueue = async () => {
+    if (!user) return;
 
-        if (error) {
-          console.error("Error fetching players for matchmaking: ", error);
-        } else if (data && data.length >= 2) {
-          // Store the players' ID's
-          setPlayerOne(data[0].queued_player_id);
-          setPlayerTwo(data[1].queued_player_id);
-          setGameId(uuidv4());
+    const { data, error } = await supabase
+      .from("queue")
+      .insert([
+        { queued_player_id: user.id, queue_entry_status: queuedPlayerStatus }, // Initial value is "queued"
+      ])
+      .select();
 
-          await facilitateMatch(); // Once queued player >= 2 we begin here,
-        }
-      };
-
-      fetchPlayers();
-    }
-  }, [queuedCount]);
-
-  // Function to facilitate the match, wait for both players to accept.
-  const facilitateMatch = async () => {
-    // Waiting for both player's to accept before creating game.
-    await handleAcceptPrompt();
-    if (acceptedOne && acceptedTwo) {
-      const { error } = await supabase
-        .from("games")
-        .insert([
-          {
-            game_id: gameId,
-            instance_status: instanceStatus,
-            player_id_red: playerOne,
-            player_id_green: playerTwo,
-            move_number: 0,
-            made_move: "",
-            board: "",
-            current_player: "red",
-            game_status: "inProgress",
-          },
-        ])
+    if (error) {
+      // Update record instead
+      const { data, error } = await supabase
+        .from("queue")
+        .update({ queue_entry_status: "queued" }) // Setting this to "queued". Not expecting problems from that, when the player presses Queue he wants to queue.
+        .eq("queued_player_id", user.id)
         .select();
-
       if (error) {
-        console.error("Error creating a new game:", error);
-      } else {
-        const newGame: IMultiplayerGame = {
-          game_id: gameId,
-          instance_status: instanceStatus,
-          player_id_red: playerOne,
-          red_ready: acceptedOne,
-          player_id_green: playerTwo,
-          green_ready: acceptedTwo,
-          move_number: 0,
-          made_move: "",
-          board: "",
-          current_player: "red",
-          game_status: "inProgress",
-          game_creator: "-", // TODO: Delete this
-          player_count: 2, // TODO: Delete this
-        };
-        setCreatedGame(newGame);
-        console.log("Both players have accepted, navigating to game...");
-        navigate(`/game/${gameId}`);
+        console.error(
+          "Failed to insert and then to update queue status: ",
+          error,
+        );
       }
-    }
-
-    // Listen to players loaded into the matchmaker
-    const matchChannel = supabase
-      .channel(`game-status:${gameId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "games" },
-        (payload) => {
-          const newStatus = payload.new as IMultiplayerGame;
-          if (newStatus) {
-            setPlayerOne(newStatus.player_id_red);
-            setPlayerTwo(newStatus.player_id_green);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      matchChannel.unsubscribe();
-    };
-  };
-
-  // Handling users accepting or not.
-  const handleAcceptPrompt = async () => {
-    if (user?.id === playerOne || user?.id === playerTwo) {
-      console.log("Proceeding...");
     } else {
-      console.log("Returning...");
-      return;
-    }
-
-    const accept = window.confirm("Match found! Accept?");
-
-    if (accept) {
-      if (playerOne === user.id) {
-        setAcceptedOne("ready");
-        const { error } = await supabase
-          .from("games")
-          .update({
-            instance_status: instanceStatus,
-            red_ready: acceptedOne,
-          })
-          .eq("game_id", gameId);
-
-        if (error) {
-          console.error("Error updating game status: ", error);
-        }
-      } else if (playerTwo === user.id) {
-        setAcceptedTwo("ready");
-        const { error } = await supabase
-          .from("games")
-          .update({
-            instance_status: instanceStatus,
-            green_ready: acceptedTwo,
-          })
-          .eq("game_id", gameId);
-
-        if (error) {
-          console.error("Error updating game status: ", error);
-        }
-      }
-
-      // Listen to players accepting the match
-      const acceptChannel = await supabase
-        .channel(`match:${gameId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "games" },
-          (payload) => {
-            const acceptStatus = payload.new as IMultiplayerGame;
-            if (acceptStatus) {
-              setAcceptedOne(acceptStatus.red_ready);
-              setAcceptedTwo(acceptStatus.green_ready);
-            }
-          },
-        )
-        .subscribe();
-
-      return () => {
-        acceptChannel.unsubscribe();
-      };
+      console.log(
+        "Player: '",
+        user.id,
+        "' entered into queue successfully.\n",
+        data,
+      );
     }
   };
 
@@ -234,8 +146,8 @@ const Queue = () => {
         <li>
           {user ? (
             <div>
-              User {user.id}
-              <Button onClick={handleAcceptPrompt}>Queue</Button>
+              {/*User {user.id}*/}
+              <Button onClick={handleEnterQueue}>Queue</Button>
             </div>
           ) : (
             <div>No logged in user.</div>
