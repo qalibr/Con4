@@ -6,18 +6,31 @@ import { v4 as uuidv4 } from "uuid";
 
 import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 import { IQueuedPlayer } from "@/confourComponents/multiplayer/IQueuedPlayer.tsx";
+import {
+  InstanceStatus,
+  PlayerStatus,
+} from "@/confourComponents/multiplayer/multiplayer-types.tsx";
+import { Button } from "@/components/ui/button.tsx";
 
 const Queue = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [queuedPlayers, setQueuedPlayers] = useState<IQueuedPlayer[]>([]);
   const [queuedCount, setQueuedCount] = useState(0);
-  const [acceptedOne, setAcceptedOne] = useState<boolean>(false);
-  const [acceptedTwo, setAcceptedTwo] = useState<boolean>(false);
-  const { gameId } = useParams();
-  const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
 
-  /* Fetch queued players and broadcast on channel */
+  // Subject to change
+  const [playerOne, setPlayerOne] = useState<string>("");
+  const [playerTwo, setPlayerTwo] = useState<string>("");
+  const [acceptedOne, setAcceptedOne] = useState<PlayerStatus>("tentative");
+  const [acceptedTwo, setAcceptedTwo] = useState<PlayerStatus>("tentative");
+  const [gameId, setGameId] = useState<string>();
+  const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
+  const [instanceStatus, setInstanceStatus] =
+    useState<InstanceStatus>("waiting");
+
+  /* Fetch queued players and broadcast on channel
+   * This function ensures everyone is aware of who is queued and not.
+   * It records how many players are queued. */
   useEffect(() => {
     const fetchQueuedPlayers = async () => {
       const { data, error } = await supabase
@@ -68,11 +81,11 @@ const Queue = () => {
           console.error("Error fetching players for matchmaking: ", error);
         } else if (data && data.length >= 2) {
           // Store the players' ID's
-          const player_id_one = data[0].queued_player_id;
-          const player_id_two = data[1].queued_player_id;
-          const gameId = uuidv4();
+          setPlayerOne(data[0].queued_player_id);
+          setPlayerTwo(data[1].queued_player_id);
+          setGameId(uuidv4());
 
-          await facilitateMatch(player_id_one, player_id_two, gameId);
+          await facilitateMatch(); // Once queued player >= 2 we begin here,
         }
       };
 
@@ -81,18 +94,18 @@ const Queue = () => {
   }, [queuedCount]);
 
   // Function to facilitate the match, wait for both players to accept.
-  const facilitateMatch = async (p1: string, p2: string, gid: string) => {
-    await handleAcceptPrompt(p1, p2);
-
+  const facilitateMatch = async () => {
+    // Waiting for both player's to accept before creating game.
+    await handleAcceptPrompt();
     if (acceptedOne && acceptedTwo) {
       const { error } = await supabase
         .from("games")
         .insert([
           {
-            game_id: gid,
-            instance_status: "waiting",
-            player_id_red: p1,
-            player_id_green: p2,
+            game_id: gameId,
+            instance_status: instanceStatus,
+            player_id_red: playerOne,
+            player_id_green: playerTwo,
             move_number: 0,
             made_move: "",
             board: "",
@@ -106,10 +119,12 @@ const Queue = () => {
         console.error("Error creating a new game:", error);
       } else {
         const newGame: IMultiplayerGame = {
-          game_id: gid,
-          instance_status: "waiting",
-          player_id_red: p1,
-          player_id_green: p2,
+          game_id: gameId,
+          instance_status: instanceStatus,
+          player_id_red: playerOne,
+          red_ready: acceptedOne,
+          player_id_green: playerTwo,
+          green_ready: acceptedTwo,
           move_number: 0,
           made_move: "",
           board: "",
@@ -117,23 +132,93 @@ const Queue = () => {
           game_status: "inProgress",
           game_creator: "-", // TODO: Delete this
           player_count: 2, // TODO: Delete this
-          red_ready: "ready", // TODO: Delete this
-          green_ready: "ready", // TODO: Delete this
         };
         setCreatedGame(newGame);
         console.log("Both players have accepted, navigating to game...");
         navigate(`/game/${gameId}`);
       }
     }
+
+    // Listen to players loaded into the matchmaker
+    const matchChannel = supabase
+      .channel(`game-status:${gameId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "games" },
+        (payload) => {
+          const newStatus = payload.new as IMultiplayerGame;
+          if (newStatus) {
+            setPlayerOne(newStatus.player_id_red);
+            setPlayerTwo(newStatus.player_id_green);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      matchChannel.unsubscribe();
+    };
   };
 
-  const handleAcceptPrompt = async (p1: string, p2: string) => {
-    if (user?.id === p1) {
-      setAcceptedOne(true);
+  // Handling users accepting or not.
+  const handleAcceptPrompt = async () => {
+    if (user?.id === playerOne || user?.id === playerTwo) {
+      console.log("Proceeding...");
+    } else {
+      console.log("Returning...");
+      return;
     }
 
-    if (user?.id === p2) {
-      setAcceptedTwo(true);
+    const accept = window.confirm("Match found! Accept?");
+
+    if (accept) {
+      if (playerOne === user.id) {
+        setAcceptedOne("ready");
+        const { error } = await supabase
+          .from("games")
+          .update({
+            instance_status: instanceStatus,
+            red_ready: acceptedOne,
+          })
+          .eq("game_id", gameId);
+
+        if (error) {
+          console.error("Error updating game status: ", error);
+        }
+      } else if (playerTwo === user.id) {
+        setAcceptedTwo("ready");
+        const { error } = await supabase
+          .from("games")
+          .update({
+            instance_status: instanceStatus,
+            green_ready: acceptedTwo,
+          })
+          .eq("game_id", gameId);
+
+        if (error) {
+          console.error("Error updating game status: ", error);
+        }
+      }
+
+      // Listen to players accepting the match
+      const acceptChannel = await supabase
+        .channel(`match:${gameId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "games" },
+          (payload) => {
+            const acceptStatus = payload.new as IMultiplayerGame;
+            if (acceptStatus) {
+              setAcceptedOne(acceptStatus.red_ready);
+              setAcceptedTwo(acceptStatus.green_ready);
+            }
+          },
+        )
+        .subscribe();
+
+      return () => {
+        acceptChannel.unsubscribe();
+      };
     }
   };
 
@@ -146,6 +231,16 @@ const Queue = () => {
             {player.queued_player_id} - Status: {player.queue_entry_status}
           </li>
         ))}
+        <li>
+          {user ? (
+            <div>
+              User {user.id}
+              <Button onClick={handleAcceptPrompt}>Queue</Button>
+            </div>
+          ) : (
+            <div>No logged in user.</div>
+          )}
+        </li>
       </ul>
       {/* Button to join the queue */}
       {/* Other UI components */}
