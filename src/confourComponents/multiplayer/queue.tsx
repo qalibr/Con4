@@ -27,41 +27,79 @@ const Queue = () => {
   const [queuedPlayers, setQueuedPlayers] = useState<IQueuedPlayer[]>([]);
 
   // Keep track of how many players are queued.
-  const [queuedCount, setQueuedCount] = useState(0);
+  const [queuedCount, setQueuedCount] = useState<number>(0);
 
   // Queued player status. "queued", "accept", "decline"
   const [queuedPlayerStatus, setQueuedPlayerStatus] =
     useState<QueuedPlayerStatus>("queued");
 
-  // Variables to store player IDs
-  const [redPlayerID, setRedPlayerID] = useState<string>("");
-  const [greenPlayerID, setGreenPlayerID] = useState<string>("");
-
-  // Variables to store player status. "tentative", "ready", "declined"
-  const [redReady, setRedReady] = useState<PlayerStatus>("tentative");
-  const [greenReady, setGreenReady] = useState<PlayerStatus>("tentative");
-
-  // Subject to change
-  const [gameId, setGameId] = useState<string>();
-
-  // Variables to store what is relevant to the games.
-  const [createdGame, setCreatedGame] = useState<IMultiplayerGame | null>(null);
-
-  // Game status. "inProgress", "red", "green", "draw"
-  const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
-
   // Player and TokenBoard.
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
 
-  // Instance status. "waiting", "active", "ended"
-  const [instanceStatus, setInstanceStatus] =
-    useState<InstanceStatus>("waiting");
+  const [inGame, setInGame] = useState(false);
+  const [redId, setRedId] = useState<string>();
+  const [greenId, setGreenId] = useState<string>();
 
   useEffect(() => {
-    /* Fetch queued players and broadcast on channel
-     * This function ensures everyone is aware of who is queued and not.
-     * It records how many players are queued. */
+    /*
+     * Attempt to create game instance */
+    const matchQueuedPlayers = async () => {
+      if (queuedCount >= 2 && queuedPlayers.length >= 2) {
+        // Assign ID's
+        const redPlayerId = queuedPlayers[0].queued_player_id;
+        const greenPlayerId = queuedPlayers[1].queued_player_id;
+        setRedId(redPlayerId);
+        setGreenId(greenPlayerId);
+
+        // If user is either red/green proceed to update their status.
+        // Setting up Red
+        if (user?.id === redId) {
+          const { error } = await supabase
+              .from("queue")
+              .update({
+                queue_entry_status: "accept",
+              })
+              .eq("queued_player_id", redId)
+              .select();
+
+          if (error) {
+            console.error("Failed to update entry in table: ", error);
+          } else {
+            // If the update was successful, proceed to the game.
+            console.log("Setting up red.");
+            setInGame(true);
+          }
+        }
+        // Setting up Green
+        else if (user?.id === greenId) {
+          const { error } = await supabase
+              .from("queue")
+              .update({
+                queue_entry_status: "accept",
+              })
+              .eq("queued_player_id", greenId)
+              .select();
+
+          if (error) {
+            console.error("Failed to update entry in table: ", error);
+          } else {
+            // If the update was successful, proceed to the game.
+            console.log("Setting up green.");
+            setInGame(true);
+          }
+        }
+      }
+
+      // TODO: Broadcast changes
+    };
+
+    matchQueuedPlayers();
+  }, [greenId, queuedCount, queuedPlayers, redId, user]);
+
+  useEffect(() => {
+    /*
+     * Fetch queuedPlayers and queuedCount */
     const fetchQueuedPlayers = async () => {
       const { data, error } = await supabase
         .from("queue")
@@ -78,7 +116,7 @@ const Queue = () => {
 
     fetchQueuedPlayers();
 
-    // Listening for realtime changes
+    // Listening for realtime changes, any, on the "queue" table.
     const queueStatusChannel = supabase
       .channel(`queue-status`)
       .on(
@@ -104,6 +142,7 @@ const Queue = () => {
   const handleEnterQueue = async () => {
     if (!user) return;
 
+    // Insert record
     const { data, error } = await supabase
       .from("queue")
       .insert([
@@ -112,18 +151,35 @@ const Queue = () => {
       .select();
 
     if (error) {
-      // Update record instead
+      // Upon error, due to unique constraint for user.id --> Update record instead
+      /* * */
+      /* * */
+      /*
+       * NOTE: Hardcoding "queued" here, make sure a player cannot queue when he shouldn't be able to. e.g. when he is in a game.
+       *       TODO: Queue button conditional render depending upon queue_entry_status.
+       *        1. Hide button when "queued" is active.
+       *        2. Hide button when InstanceStatus is "active"? */
       const { data, error } = await supabase
         .from("queue")
-        .update({ queue_entry_status: "queued" }) // Setting this to "queued". Not expecting problems from that, when the player presses Queue he wants to queue.
+        .update({ queue_entry_status: "queued" })
         .eq("queued_player_id", user.id)
         .select();
+
       if (error) {
         console.error(
           "Failed to insert and then to update queue status: ",
           error,
         );
+      } else {
+        console.log(
+          "Player: '",
+          user.id,
+          "' updated queue record successfully.\n",
+          data,
+        );
       }
+      /* * */
+      /* * */
     } else {
       console.log(
         "Player: '",
