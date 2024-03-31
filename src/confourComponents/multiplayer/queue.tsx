@@ -6,11 +6,9 @@ import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button.tsx";
 
 import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
-import { IQueuedPlayer } from "@/confourComponents/multiplayer/IQueuedPlayer.tsx";
 import {
   InstanceStatus,
   PlayerStatus,
-  QueuedPlayerStatus,
 } from "@/confourComponents/multiplayer/multiplayer-types.tsx";
 import {
   GameStatus,
@@ -18,8 +16,22 @@ import {
   TokenBoard,
 } from "@/confourComponents/game/types.tsx";
 import { generateEmptyBoard } from "@/confourComponents/game/game-logic.tsx";
+import { Simulate } from "react-dom/test-utils";
+import error = Simulate.error;
+import { data } from "autoprefixer";
 
-interface MatchFound {
+type QueuedPlayerStatus = "queued" | "accepted" | "declined" | "timeout" | "";
+
+interface QueueEntry {
+  queue_id: string;
+  queue_entry_created_at: Date;
+  queued_player_id: string;
+  queue_entry_status: QueuedPlayerStatus;
+  match_id: string | null;
+}
+
+interface Match {
+  gameId: string;
   redPlayerId: string;
   greenPlayerId: string;
   redPlayerAccepted?: boolean;
@@ -29,9 +41,9 @@ interface MatchFound {
 const Queue = () => {
   const { user } = useAuth();
 
-  // Keep track of queue entries.
-  const [queuedPlayers, setQueuedPlayers] = useState<IQueuedPlayer[]>([]);
-  const [matchFound, setMatchFound] = useState<MatchFound | null>(null);
+  const [queuedPlayers, setQueuedPlayers] = useState<QueueEntry[]>([]);
+  const [match, setMatch] = useState<Match | null>(null);
+  const [matchId, setMatchId] = useState<string>("");
   const [showConfirmationDialogue, setShowConfirmationDialogue] =
     useState(false);
   const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
@@ -41,6 +53,7 @@ const Queue = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   const [inGame, setInGame] = useState<boolean>(false);
 
+  /* QUEUE: Fetch and Channel broadcast */
   useEffect(() => {
     /*
      * Fetch queuedPlayers */
@@ -52,6 +65,7 @@ const Queue = () => {
 
       if (error) {
         console.error("Error fetching queue:", error);
+        return;
       } else {
         setQueuedPlayers(data); // Keep track of status
       }
@@ -75,8 +89,12 @@ const Queue = () => {
     return () => {
       queueStatusChannel.unsubscribe();
     };
-  }, [matchFound]);
+  }, [match]);
 
+  /* MATCHMAKING: Pull out two players from the front of the array and clear their queue entry status.
+   *   setMatchFound({ redPlayerId, greenPlayerId });
+   *   setShowConfirmationDialogue(true);
+   *   */
   useEffect(() => {
     /*
      * Attempt to create game instance */
@@ -86,9 +104,12 @@ const Queue = () => {
       // Assign ID's
       const redPlayerId = queuedPlayers[0].queued_player_id;
       const greenPlayerId = queuedPlayers[1].queued_player_id;
+      setMatchId(uuidv4());
+      const gameId = matchId;
+      console.log("GENERATED MATCH ID: ", gameId);
 
       if ([redPlayerId, greenPlayerId].includes(user?.id as string)) {
-        setMatchFound({ redPlayerId, greenPlayerId });
+        setMatch({ gameId, redPlayerId, greenPlayerId });
         setShowConfirmationDialogue(true);
       }
 
@@ -98,7 +119,8 @@ const Queue = () => {
           const { error } = await supabase
             .from("queue")
             .update({
-              queue_entry_status: "",
+              queue_entry_status: "", // Not setting status yet, waiting for either decline from one or accept from both.
+              match_id: gameId,
             })
             .eq("queued_player_id", playerId);
 
@@ -118,7 +140,7 @@ const Queue = () => {
     matchQueuedPlayers();
   }, [queuedPlayers, user?.id]);
 
-  /*
+  /* TIMEOUT:
    * A timeout effect to clear the matchFound state if it runs for longer than 30 seconds, or clear in case
    * either player declines. */
   useEffect(() => {
@@ -149,7 +171,7 @@ const Queue = () => {
         if (data?.queue_entry_status === "declined") {
           clearInterval(timerId!);
           setShowConfirmationDialogue(false);
-          setMatchFound(null);
+          setMatch(null);
         }
       }, 1000);
     }
@@ -160,30 +182,26 @@ const Queue = () => {
   /*
    * Set both player's status as "declined" */
   const playerMatchDeclined = async () => {
-    for (const playerId of [
-      matchFound?.redPlayerId,
-      matchFound?.greenPlayerId,
-    ]) {
+    for (const playerId of [match?.redPlayerId, match?.greenPlayerId]) {
       if (!playerId) continue;
       await supabase
         .from("queue")
         .update({
           queue_entry_status: "declined",
+          match_id: "",
         })
         .eq("queued_player_id", playerId);
     }
 
     // If either player declines, reset matchFound and confirmation dialogue states.
     setShowConfirmationDialogue(false);
-    setMatchFound(null);
+    setMatch(null);
   };
 
   const playerMatchAccepted = async () => {
-    for (const playerId of [
-      matchFound?.redPlayerId,
-      matchFound?.greenPlayerId,
-    ]) {
+    for (const playerId of [match?.redPlayerId, match?.greenPlayerId]) {
       if (!playerId) continue;
+
       await supabase
         .from("queue")
         .update({
@@ -192,6 +210,18 @@ const Queue = () => {
         .eq("queued_player_id", user?.id);
     }
     setShowConfirmationDialogue(false);
+
+    // TODO: Adds two rows, one for each player that accepts
+    await supabase
+        .from("matches")
+        .insert([
+          {
+            match_id: matchId,
+            red_id: match?.redPlayerId,
+            green_id: match?.greenPlayerId,
+          }
+        ])
+        .select();
   };
 
   /*
@@ -200,19 +230,17 @@ const Queue = () => {
     setShowConfirmationDialogue(false);
 
     // Return early if matchFound is null for some reason...
-    if (!matchFound) {
+    if (!match) {
       console.log("matchFound was null, returning...");
       playerMatchDeclined();
       return;
     }
 
-    // TODO: When both accept it doesn't proceed. FIX THAT.
-
     // Player accepts. Update matchFound with accept status state of the players.
-    const updatedMatchFound = { ...matchFound };
-    if (user?.id === matchFound.redPlayerId)
+    const updatedMatchFound = { ...match };
+    if (user?.id === match.redPlayerId)
       updatedMatchFound.redPlayerAccepted = true;
-    if (user?.id === matchFound.greenPlayerId)
+    if (user?.id === match.greenPlayerId)
       updatedMatchFound.greenPlayerAccepted = true;
 
     console.log("Updated red: ", updatedMatchFound.redPlayerAccepted);
@@ -227,23 +255,12 @@ const Queue = () => {
       console.log(`A player accepted: ${user?.id}`);
       await playerMatchAccepted();
     }
-
-    // Check if both players have accepted. If so, set up the game.
-    if (
-      updatedMatchFound.redPlayerAccepted &&
-      updatedMatchFound.greenPlayerAccepted
-    ) {
-      console.log("Both players have accepted, setting up game...");
-      await setupGame(matchFound.redPlayerId, matchFound.greenPlayerId);
-      setInGame(true);
-      setMatchFound(null); // Clear matchFound after setup is complete.
-    } else {
-      console.log("Waiting for other player's response...");
-      setMatchFound(updatedMatchFound); // Update matchFound with current acceptances.
-    }
   };
 
-  const setupGame = async (redPlayerId: string | undefined, greenPlayerId: string | undefined) => {
+  const setupGame = async (
+    redPlayerId: string | undefined,
+    greenPlayerId: string | undefined,
+  ) => {
     // Update the queue entry status to "accept" for both players to proceed with the game setup.
     for (const playerId of [redPlayerId, greenPlayerId]) {
       const { error } = await supabase
