@@ -19,7 +19,7 @@ import { generateEmptyBoard } from "@/confourComponents/game/game-logic.tsx";
 import { Simulate } from "react-dom/test-utils";
 import error = Simulate.error;
 
-type QueueStatus = "0" | "1" | "2" | "matched" | "failed" | "timeout" | null;
+type QueueStatus = "1" | "2" | null;
 type QueuePlayerStatus =
   | "queued"
   | "accepted"
@@ -55,6 +55,7 @@ interface MatchEntry {
 const Queue = () => {
   const { user } = useAuth();
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [matches, setMatches] = useState<MatchEntry | null>(null);
   const [matchId, setMatchId] = useState<string | null>("");
   const [redId, setRedId] = useState<string | null>("");
@@ -85,37 +86,65 @@ const Queue = () => {
         if (fetchError) {
           throw error;
         }
-
         // NOTE: Fetching all queue data, and then look for current user.
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         setCurrentQueueEntry(queueData);
+
+        // NOTE: See if current user is queued...
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const userIsQueued = queueData.some(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
         setIsQueued(userIsQueued);
         console.log("userIsQueued: ", userIsQueued);
 
-        // NOTE: Match found?
+        // NOTE: The queue status?
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        const queueStatus2 = queueData.some(
+            (entry) => entry.red_id !== null && entry.green_id !== null
+        );
+        const queueStatus1 = queueData.some(
+            (entry) => entry.red_id !== null && entry.green_id === null ||
+                entry.red_id === null && entry.green_id !== null
+        );
+        if (queueStatus2) {
+          setQueueStatus("2");
+        } else if (queueStatus1) {
+          setQueueStatus("1");
+        } else {
+          setQueueStatus(null);
+        }
+        console.log("Queue status: ", queueStatus);
+
+        // NOTE: Match found?..
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const usersMatchFound = queueData.some(
           (entry) => entry.red_id && entry.green_id,
         );
         setMatchFound(usersMatchFound);
         console.log("usersMatchFound: ", usersMatchFound);
 
-        // NOTE: Users matched? (red and green IDs != null)
+        // NOTE: Current user matched against another user?..
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const usersMatched = queueData.some(
           (entry) => entry.red_id !== null && entry.green_id !== null,
         );
         setMatchFound(usersMatched);
         console.log("usersMatched: ", usersMatched);
 
-        // NOTE: Users marked as ready?
+        // NOTE: Both users marked as ready?..
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const usersMarkedReady = queueData.some(
           (entry) => entry.red_ready && entry.green_ready,
         );
         setPlayersAreReady(usersMarkedReady);
         console.log("Players are ready: ", usersMarkedReady);
 
+        // TODO: Maybe not do this stuff with the "matches" table?
+        //  Remove this, make a new file match.tsx to handle the game instance
+        //  and let this queue file handle the whole process of getting there...
         // NOTE: Fetching match data specific to current user.
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const matchData = await fetchMatchDataForUser(user.id);
         const userIsInMatch = matchData.some(
           (entry: { red_id: null; green_id: null }) =>
@@ -140,6 +169,7 @@ const Queue = () => {
           console.log("Queue changed: ", payload);
           fetchingEntries();
 
+          // TODO: Is this needed? Probably not.
           const updateId = payload.new as QueueEntry;
           if (updateId) {
             setMatchId(updateId.match_id);
