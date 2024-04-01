@@ -36,6 +36,8 @@ interface QueueEntry {
   green_id: string | null;
   green_status: QueuePlayerStatus;
   queue_status: QueueStatus;
+  red_ready: boolean;
+  green_ready: boolean;
 }
 
 interface MatchEntry {
@@ -57,16 +59,17 @@ const Queue = () => {
   const [matchId, setMatchId] = useState<string | null>("");
   const [redId, setRedId] = useState<string | null>("");
   const [greenId, setGreenId] = useState<string | null>("");
+  const [playersAreReady, setPlayersAreReady] = useState<boolean>(false);
   const [isQueued, setIsQueued] = useState<boolean>(false);
+  const [matchFound, setMatchFound] = useState<boolean>(false);
   const [isInMatch, setIsInMatch] = useState<boolean>(false);
-  // const [showDialog, setShowDialog] = useState(false);
   // const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
   // // Player and TokenBoard.
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   // const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   // const [inGame, setInGame] = useState<boolean>(false);
 
-  /* 0.
+  /*
    * Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
@@ -85,15 +88,40 @@ const Queue = () => {
 
         // NOTE: Fetching all queue data, and then look for current user.
         setCurrentQueueEntry(queueData);
-        const userIsQueued = queueData.some(entry => entry.red_id === user.id || entry.green_id === user.id);
+        const userIsQueued = queueData.some(
+          (entry) => entry.red_id === user.id || entry.green_id === user.id,
+        );
         setIsQueued(userIsQueued);
+        console.log("userIsQueued: ", userIsQueued);
+
+        // NOTE: Match found?
+        const usersMatchFound = queueData.some(
+          (entry) => entry.red_id && entry.green_id,
+        );
+        setMatchFound(usersMatchFound);
+        console.log("usersMatchFound: ", usersMatchFound);
+
+        // NOTE: Users matched? (red and green IDs != null)
+        const usersMatched = queueData.some(
+          (entry) => entry.red_id !== null && entry.green_id !== null,
+        );
+        setMatchFound(usersMatched);
+        console.log("usersMatched: ", usersMatched);
+
+        // NOTE: Users marked as ready?
+        const usersMarkedReady = queueData.some(
+          (entry) => entry.red_ready && entry.green_ready,
+        );
+        setPlayersAreReady(usersMarkedReady);
+        console.log("Players are ready: ", usersMarkedReady);
 
         // NOTE: Fetching match data specific to current user.
         const matchData = await fetchMatchDataForUser(user.id);
         const userIsInMatch = matchData.some(
-          (match: { red_id: string; green_id: string }) =>
-            match.red_id === user.id || match.green_id === user.id,
+          (entry: { red_id: null; green_id: null }) =>
+            entry.red_id !== null && entry.green_id !== null,
         );
+        console.log("userMatchFound: ", userIsInMatch);
         setIsInMatch(userIsInMatch);
       } catch (error) {
         // console.error("Error fetching queue table...");
@@ -126,77 +154,6 @@ const Queue = () => {
       queueChannel.unsubscribe();
     };
   }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    /*
-     * Fetching a single record for current user... */
-    const checkUserStatus = async () => {
-      try {
-        if (isQueued) fetchQueueDataForUser(user.id);
-        if (isInMatch) fetchMatchDataForUser(user.id);
-      } catch (error) {
-        console.log("No queue or match entries for user currently...");
-      }
-    };
-
-    checkUserStatus();
-  }, [isQueued, isInMatch]);
-
-  /* 2. Leaving queue and entering match...
-   *  Effect to retrieve match_id and create entry in "matches" table */
-  useEffect(() => {
-    if (!user || !isQueued) return;
-
-    const fetchMatchId = async () => {
-      const { data, error } = await supabase
-        .from("queue")
-        .select("*")
-        .or(`red_id.eq.${user.id},green_id.eq.${user.id}`)
-        .single();
-      if (error) {
-        console.error("Error fetching match_id...", error);
-        return;
-      } else if (data) {
-        setMatchId(data.match_id);
-        setRedId(data.red_id);
-        setGreenId(data.green_id);
-        console.log("match_id: ", data.match_id);
-        console.log("red_id: ", data.red_id);
-        console.log("green_id: ", data.green_id);
-
-        if (data.red_id !== null && data.green_id !== null) {
-          console.log("Match could be generated here...");
-        }
-      }
-    };
-
-    fetchMatchId();
-
-    const queueChannel = supabase
-      .channel(`queue`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "queue" },
-        (payload) => {
-          console.log("Queue changed: ", payload);
-          fetchMatchId();
-
-          const updateId = payload.new as MatchEntry;
-          if (updateId) {
-            setMatchId(updateId.match_id);
-            setRedId(updateId.red_id);
-            setGreenId(updateId.green_id);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      queueChannel.unsubscribe();
-    };
-  }, [matchId, greenId, redId]);
 
   /*
    * A function to create a new entry in the "queue" table... */
@@ -323,7 +280,68 @@ const Queue = () => {
     }
 
     setIsQueued(false);
-    setIsInMatch(false);
+    setMatchFound(false);
+  };
+
+  /*
+  * Function to mark players are ready... */
+  const markPlayerReady = async (matchId: string, playerId: string) => {
+    if (!user) return;
+
+    try {
+      const match = await supabase
+        .from("queue")
+        .select("*")
+        .eq("match_id", matchId)
+        .single();
+
+      if (match.error) throw match.error;
+
+      // Mark player ready in the updated payload.
+      const updatePayload =
+        match.data.red_id === playerId
+          ? { red_ready: true }
+          : { green_ready: true };
+
+      const { error: updateError } = await supabase
+        .from("queue")
+        .update(updatePayload)
+        .eq("match_id", matchId);
+
+      if (updateError) throw updateError;
+
+      console.log("Player marked as ready");
+    } catch (error) {
+      console.error("Error marking player as ready:", error);
+    }
+  };
+
+  /*
+  * TODO: Create function to decline a ready check when match is found,
+  *  whereupon the player that declined is simply removed from the queue.
+  *  Could also make it so the whole entry is destroyed and the function
+  *  "handleEnterQueue" is called to re-queue the other person. */
+
+  const checkIfPlayersReadyThenStartMatch = async (matchId: string) => {
+    try {
+      const { data: match, error: fetchError } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("match_id", matchId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (match.red_ready && match.green_ready) {
+        // Both players are ready, proceed to start the match
+        console.log("Both players are ready, starting match...");
+        enterMatch(match.match_id, match.red_id, match.green_id);
+      } else {
+        console.log("Waiting for both players to be ready...");
+      }
+    } catch (error) {
+      console.error("Error checking match readiness:", error);
+    }
   };
 
   /*
@@ -378,38 +396,41 @@ const Queue = () => {
     }
 
     setIsQueued(false);
+    setMatchFound(false);
     setIsInMatch(true);
     setMatches(matchEntry);
   };
 
-  const fetchQueueDataForUser = async (uid: string) => {
-    const { data: queueData, error: queueError } = await supabase
-      .from("queue")
-      .select("*")
-      .or(`red_id.eq.${uid},green_id.eq.${uid}`)
-      .single();
-    if (queueError) {
-      // console.error("Error fetching queue table...", queueError);
-      return null;
-    } else if (queueData.red_id === uid || queueData.green_id === uid) {
-      console.log("User is queued");
-      setIsQueued(true);
-    }
-  };
-
   const fetchMatchDataForUser = async (uid: string) => {
-    const { data: matchData, error: matchError } = await supabase
-      .from("matches")
-      .select("*")
-      .or(`red_id.eq.${uid},green_id.eq.${uid}`)
-      .single();
-    if (matchError) {
-      // console.error("Error fetching matches table...", matchError);
-      return null;
-    } else if (matchData.red_id === uid || matchData.green_id === uid) {
-      console.log("User is matched");
-      setIsInMatch(true);
-      return matchData;
+    let queryCondition = null;
+    if (uid) {
+      queryCondition = `red_id.eq.${uid},green_id.eq.${uid}`;
+    }
+
+    if (queryCondition) {
+      try {
+        const { data: matchData, error: matchError } = await supabase
+          .from("matches")
+          .select("*")
+          .or(queryCondition)
+          .single();
+
+        if (matchError) throw matchError;
+
+        if (matchData) {
+          console.log("Fetching match data was successful...");
+          setMatchFound(true);
+          return matchData;
+        } else {
+          console.log("No current match for the user.");
+          setMatchFound(false);
+        }
+      } catch (error) {
+        console.error("Fetching match data failed...", error);
+      }
+    } else {
+      console.log("Invalid user IDs...");
+      setMatchFound(false);
     }
   };
 
@@ -426,10 +447,21 @@ const Queue = () => {
           You are currently in the queue. Please wait for your match to start.
         </p>
       )}
+      {isQueued && matchFound && (
+        <div>
+          <p>Found match. Please press Ready to start.</p>
+          <Button
+            onClick={() => matchId && user && markPlayerReady(matchId, user.id)}
+            className="m-4"
+          >
+            Ready
+          </Button>
+        </div>
+      )}
       {isInMatch && <p>You are currently in a match.</p>}
 
       {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
-      {isQueued && !isInMatch && (
+      {isQueued && !matchFound && (
         <Button onClick={handleLeaveQueue} className="m-4">
           Leave Queue
         </Button>
