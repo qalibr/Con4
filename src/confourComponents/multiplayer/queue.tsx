@@ -52,7 +52,7 @@ interface MatchEntry {
 
 const Queue = () => {
   const { user } = useAuth();
-  const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
+  const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [matches, setMatches] = useState<MatchEntry | null>(null);
   const [matchId, setMatchId] = useState<string | null>("");
   const [redId, setRedId] = useState<string | null>("");
@@ -70,82 +70,47 @@ const Queue = () => {
    * Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
-    const checkUserStatus = async () => {
-      if (!isQueued) {
-        const { data: queueData, error: queueError } = await supabase
+
+    /*
+     * Fetching the entire table... */
+    const fetchingEntries = async () => {
+      try {
+        const { data: queueData, error: fetchError } = await supabase
           .from("queue")
-          .select("*")
-          .or(`red_id.eq.${user.id},green_id.eq.${user.id}`)
-          .single();
-        if (queueError) {
-          console.error("Error fetching queue table...", queueError);
-          return;
+          .select("*");
+
+        if (fetchError) {
+          throw error;
         }
-        if (queueData.red_id !== null) {
-          if (queueData.red_id === user.id) {
-            setIsQueued(true); // NOTE
-          }
-        }
-        if (queueData.green_id !== null) {
-          if (queueData.green_id === user.id) {
-            setIsQueued(true); // NOTE
-          }
-        }
-      }
-      if (!isInMatch) {
-        const { data: matchData, error: matchError } = await supabase
-          .from("matches")
-          .select("*")
-          .or(`red_id.eq.${user.id},green_id.eq.${user.id}`)
-          .single();
-        if (matchError) {
-          console.error("Error fetching matches table...", matchError);
-          return;
-        }
-        if (matchData.red_id !== null) {
-          if (matchData.red_id === user.id) {
-            setIsInMatch(true); // NOTE
-          }
-        }
-        if (matchData.green_id !== null) {
-          if (matchData.green_id === user.id) {
-            setIsInMatch(true); // NOTE
-          }
-        }
+
+        // NOTE: Fetching all queue data, and then look for current user.
+        setCurrentQueueEntry(queueData);
+        const userIsQueued = queueData.some(entry => entry.red_id === user.id || entry.green_id === user.id);
+        setIsQueued(userIsQueued);
+
+        // NOTE: Fetching match data specific to current user.
+        const matchData = await fetchMatchDataForUser(user.id);
+        const userIsInMatch = matchData.some(
+          (match: { red_id: string; green_id: string }) =>
+            match.red_id === user.id || match.green_id === user.id,
+        );
+        setIsInMatch(userIsInMatch);
+      } catch (error) {
+        // console.error("Error fetching queue table...");
       }
     };
 
-    checkUserStatus();
-  }, [isInMatch, isQueued]); // When a change is made to either, this effect is triggered.
-
-  /* 1. Initial queueing...
-   * Effect to fetch the queue table. */
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchQueueEntries = async () => {
-      const { data, error } = await supabase
-        .from("queue")
-        .select("*")
-        .or("queue_status.eq.1");
-
-      if (error) {
-        console.error("Error fetching queue table...", error);
-      } else if (data) {
-        setQueueEntries(data);
-      }
-    };
-
-    fetchQueueEntries();
+    fetchingEntries();
 
     const queueChannel = supabase
+
       .channel(`queue`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "queue" },
         (payload) => {
           console.log("Queue changed: ", payload);
-          fetchQueueEntries();
+          fetchingEntries();
 
           const updateId = payload.new as QueueEntry;
           if (updateId) {
@@ -161,6 +126,23 @@ const Queue = () => {
       queueChannel.unsubscribe();
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    /*
+     * Fetching a single record for current user... */
+    const checkUserStatus = async () => {
+      try {
+        if (isQueued) fetchQueueDataForUser(user.id);
+        if (isInMatch) fetchMatchDataForUser(user.id);
+      } catch (error) {
+        console.log("No queue or match entries for user currently...");
+      }
+    };
+
+    checkUserStatus();
+  }, [isQueued, isInMatch]);
 
   /* 2. Leaving queue and entering match...
    *  Effect to retrieve match_id and create entry in "matches" table */
@@ -270,7 +252,7 @@ const Queue = () => {
   const handleEnterQueue = async () => {
     if (!user) return;
 
-    const entryToJoin = queueEntries.find(
+    const entryToJoin = currentQueueEntry.find(
       (entry) => entry.queue_status === "1" && entry.red_id !== user.id,
     );
 
@@ -400,6 +382,37 @@ const Queue = () => {
     setMatches(matchEntry);
   };
 
+  const fetchQueueDataForUser = async (uid: string) => {
+    const { data: queueData, error: queueError } = await supabase
+      .from("queue")
+      .select("*")
+      .or(`red_id.eq.${uid},green_id.eq.${uid}`)
+      .single();
+    if (queueError) {
+      // console.error("Error fetching queue table...", queueError);
+      return null;
+    } else if (queueData.red_id === uid || queueData.green_id === uid) {
+      console.log("User is queued");
+      setIsQueued(true);
+    }
+  };
+
+  const fetchMatchDataForUser = async (uid: string) => {
+    const { data: matchData, error: matchError } = await supabase
+      .from("matches")
+      .select("*")
+      .or(`red_id.eq.${uid},green_id.eq.${uid}`)
+      .single();
+    if (matchError) {
+      // console.error("Error fetching matches table...", matchError);
+      return null;
+    } else if (matchData.red_id === uid || matchData.green_id === uid) {
+      console.log("User is matched");
+      setIsInMatch(true);
+      return matchData;
+    }
+  };
+
   return (
     <div>
       <h2>Queue Status</h2>
@@ -416,7 +429,11 @@ const Queue = () => {
       {isInMatch && <p>You are currently in a match.</p>}
 
       {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
-      {isQueued && !isInMatch && <Button onClick={handleLeaveQueue} className="m-4">Leave Queue</Button>}
+      {isQueued && !isInMatch && (
+        <Button onClick={handleLeaveQueue} className="m-4">
+          Leave Queue
+        </Button>
+      )}
 
       {/* Optionally, render information about the current match if the user is in one */}
       {isInMatch && matches && (
