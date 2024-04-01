@@ -38,7 +38,7 @@ interface QueueEntry {
   queue_status: QueueStatus;
 }
 
-interface Match {
+interface MatchEntry {
   match_id: string;
   match_status: MatchStatus;
   game_status: GameStatus;
@@ -46,20 +46,23 @@ interface Match {
   green_id: string;
   move_number: number;
   made_move: string;
-  board: string;
+  board: TokenBoard;
   current_player: Player;
 }
 
 const Queue = () => {
   const { user } = useAuth();
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
-  const [matches, setMatches] = useState<Match | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
-  // Player and TokenBoard.
+  const [matches, setMatches] = useState<MatchEntry | null>(null);
+  const [matchId, setMatchId] = useState<string>("");
+  const [redId, setRedId] = useState<string>("");
+  const [greenId, setGreenId] = useState<string>("");
+  // const [showDialog, setShowDialog] = useState(false);
+  // const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
+  // // Player and TokenBoard.
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
-  const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
-  const [inGame, setInGame] = useState<boolean>(false);
+  // const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
+  // const [inGame, setInGame] = useState<boolean>(false);
 
   /* 1. Initial queueing...
    * Effect to fetch the queue table. */
@@ -89,6 +92,13 @@ const Queue = () => {
         (payload) => {
           console.log("Queue changed: ", payload);
           fetchQueueEntries();
+
+          const updateId = payload.new as QueueEntry;
+          if (updateId) {
+            setMatchId(updateId.match_id);
+            setRedId(updateId.red_id);
+            setGreenId(updateId.green_id);
+          }
         },
       )
       .subscribe();
@@ -98,7 +108,58 @@ const Queue = () => {
     };
   }, [user]);
 
-  // TODO: Create effect to fetch rows with red_status and green_status as "queued"
+  /* 2. Leaving queue and entering match...
+   *  Effect to retrieve match_id and create entry in "matches" table */
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchMatchId = async () => {
+      const { data, error } = await supabase
+        .from("queue")
+        .select("*")
+        .or(`red_id.eq.${user.id},green_id.eq.${user.id}`)
+        .single();
+
+      if (error) {
+        console.error("Error fetching match_id...", error);
+        return;
+      } else if (data) {
+        setMatchId(data.match_id);
+        setRedId(data.red_id);
+        setGreenId(data.green_id);
+      }
+    };
+
+    fetchMatchId();
+
+    if (matchId) {
+      console.log("Attempting to enter match... matchId: ", matchId);
+      enterMatch(matchId, redId, greenId);
+    }
+
+    const queueChannel = supabase
+      .channel(`queue`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "queue" },
+        (payload) => {
+          console.log("Queue changed: ", payload);
+          fetchMatchId();
+
+          const updateId = payload.new as MatchEntry;
+          if (updateId) {
+            setMatchId(updateId.match_id);
+            setRedId(updateId.red_id);
+            setGreenId(updateId.green_id);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      queueChannel.unsubscribe();
+    };
+  }, [user]);
 
   /*
    * A function to create a new entry in the "queue" table... */
@@ -119,6 +180,7 @@ const Queue = () => {
 
     if (error) {
       console.error("Error inserting new entry to 'queue' table: ", error);
+      return;
     }
   };
 
@@ -140,13 +202,15 @@ const Queue = () => {
 
     if (error) {
       console.error("Error inserting new entry to 'queue' table: ", error);
+      return;
     }
   };
 
   /*
-  * Function to join the queue */
+   * Function to join the queue */
   const handleQueueAction = async () => {
     if (!user) return;
+    // BUG: It should not be possible for a user to be in more than one record. Must fix this bug.
 
     const entryToJoin = queueEntries.find(
       (entry) => entry.queue_status === "1" && entry.red_id !== user.id,
@@ -159,10 +223,67 @@ const Queue = () => {
     }
   };
 
+  /*
+   * This function will enter match, meaning it will create an entry in "matches" table,
+   * then it will delete the previous record in the "queue" table, if successful. */
+  const enterMatch = async (
+    matchId: string,
+    redId: string,
+    greenId: string,
+  ) => {
+    if (!user) return;
+
+    const matchEntry: MatchEntry = {
+      match_id: matchId,
+      match_status: "active",
+      game_status: "inProgress",
+      red_id: redId,
+      green_id: greenId,
+      move_number: 0,
+      made_move: "",
+      board: board,
+      current_player: "red",
+    };
+
+    // Insert new entry to "matches" table...
+    const { data: insertData, error: insertError } = await supabase
+      .from("matches")
+      .insert(matchEntry);
+
+    // Make sure nothing went wrong, if it did we return to avoid losing data...
+    if (insertError) {
+      console.error(
+        "Error inserting new entry to 'queue' table: ",
+        insertError,
+      );
+      return;
+    } else {
+      console.log("Matches entry successfully inserted... ", insertData);
+    }
+
+    // Perform the deletion...
+    const { error: deleteError } = await supabase
+      .from("queue")
+      .delete()
+      .match({ match_id: matchId });
+
+    if (deleteError) {
+      console.error("Error deleting queue entry: ", deleteError);
+      return;
+    } else {
+      console.log("Queue entry successfully deleted...");
+    }
+
+    setMatches(matchEntry);
+  };
+
   return (
     <div>
       <h2>Entries: {queueEntries.length}</h2>
-      <Button onClick={handleQueueAction} className="m-4"> Queue </Button>
+      <Button onClick={handleQueueAction} className="m-4">
+        {" "}
+        Queue{" "}
+      </Button>
     </div>
   );
 };
