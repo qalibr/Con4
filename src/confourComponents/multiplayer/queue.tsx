@@ -386,7 +386,7 @@ const Queue = () => {
   };
 
   /*
-   * This function is slightly more complicated, in that it needs to:
+   * This function needs to:
    * 1. End the queue by deleting the entry
    * 2. Notify the other user that the match was declined */
   const declinePlayerReady = async (matchId: string, playerId: string) => {
@@ -415,29 +415,6 @@ const Queue = () => {
     }
   };
 
-  // TODO: Flow not checked, older function
-  const checkIfPlayersReadyThenStartMatch = async (matchId: string) => {
-    try {
-      const { data: match, error: fetchError } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("match_id", matchId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      if (match.red_ready && match.green_ready) {
-        // Both players are ready, proceed to start the match
-        console.log("Both players are ready, starting match...");
-        enterMatch(match.match_id, match.red_id, match.green_id);
-      } else {
-        console.log("Waiting for both players to be ready...");
-      }
-    } catch (error) {
-      console.error("Error checking match readiness:", error);
-    }
-  };
-
   /*
    * This function will enter match, meaning it will create an entry in "matches" table,
    * then it will delete the previous record in the "queue" table, if successful. */
@@ -447,12 +424,12 @@ const Queue = () => {
     redId: string,
     greenId: string,
   ) => {
-    if (!user) return;
+    if (!user || !redId || !greenId || !matchId) return;
 
     const matchEntry: MatchEntry = {
       match_id: matchId,
-      match_status: "active",
-      game_status: "inProgress",
+      match_status: "active", // TODO: Consider making this a boolean state variable
+      game_status: "inProgress", // Initial "inProgress"... others "draw", "red", "green"...
       red_id: redId,
       green_id: greenId,
       move_number: 0,
