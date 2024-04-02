@@ -54,16 +54,29 @@ interface MatchEntry {
 
 const Queue = () => {
   const { user } = useAuth();
+
+  /*
+   * These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
-  const [matches, setMatches] = useState<MatchEntry | null>(null);
   const [matchId, setMatchId] = useState<string | null>("");
   const [redId, setRedId] = useState<string | null>("");
   const [greenId, setGreenId] = useState<string | null>("");
+  const [redReady, setRedReady] = useState<boolean>(false);
+  const [greenReady, setGreenReady] = useState<boolean>(false);
+
+  /*
+   * Related to "matches" table... */
+  const [matches, setMatches] = useState<MatchEntry | null>(null);
+
+  /*
+   * Useful state variables to control the flow of the app... */
   const [playersAreReady, setPlayersAreReady] = useState<boolean>(false);
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
   const [isInMatch, setIsInMatch] = useState<boolean>(false);
+
+  // //
   // const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
   // // Player and TokenBoard.
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
@@ -101,11 +114,12 @@ const Queue = () => {
         // NOTE: The queue status?
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const queueStatus2 = queueData.some(
-            (entry) => entry.red_id !== null && entry.green_id !== null
+          (entry) => entry.red_id !== null && entry.green_id !== null,
         );
         const queueStatus1 = queueData.some(
-            (entry) => entry.red_id !== null && entry.green_id === null ||
-                entry.red_id === null && entry.green_id !== null
+          (entry) =>
+            (entry.red_id !== null && entry.green_id === null) ||
+            (entry.red_id === null && entry.green_id !== null),
         );
         if (queueStatus2) {
           setQueueStatus("2");
@@ -116,7 +130,7 @@ const Queue = () => {
         }
         console.log("Queue status: ", queueStatus);
 
-        // NOTE: Match found?..
+        // NOTE: Match found? ...
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const usersMatchFound = queueData.some(
           (entry) => entry.red_id && entry.green_id,
@@ -126,13 +140,27 @@ const Queue = () => {
 
         // NOTE: Current user matched against another user?..
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // TODO: This doesn't make any sense to me, look it over again...
         const usersMatched = queueData.some(
           (entry) => entry.red_id !== null && entry.green_id !== null,
         );
         setMatchFound(usersMatched);
         console.log("usersMatched: ", usersMatched);
 
-        // NOTE: Both users marked as ready?..
+        // NOTE: Players ready?
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        const updateRedMarkedReady = queueData.some(
+            (entry) => entry.red_ready
+        );
+        setRedReady(updateRedMarkedReady);
+        console.log("Player RED marked ready?: ", updateRedMarkedReady);
+        const updateGreenMarkedReady = queueData.some(
+            (entry) => entry.green_ready
+        );
+        setGreenReady(updateGreenMarkedReady);
+        console.log("Player GREEN marked ready?: ", updateGreenMarkedReady);
+
+        // NOTE: Both users marked as ready?.. (this is redundant)
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const usersMarkedReady = queueData.some(
           (entry) => entry.red_ready && entry.green_ready,
@@ -140,18 +168,23 @@ const Queue = () => {
         setPlayersAreReady(usersMarkedReady);
         console.log("Players are ready: ", usersMarkedReady);
 
-        // TODO: Maybe not do this stuff with the "matches" table?
-        //  Remove this, make a new file match.tsx to handle the game instance
-        //  and let this queue file handle the whole process of getting there...
         // NOTE: Fetching match data specific to current user.
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const matchData = await fetchMatchDataForUser(user.id);
-        const userIsInMatch = matchData.some(
-          (entry: { red_id: null; green_id: null }) =>
-            entry.red_id !== null && entry.green_id !== null,
-        );
-        console.log("userMatchFound: ", userIsInMatch);
-        setIsInMatch(userIsInMatch);
+        // BUG: There is a problem here, we get an error whenever there isn't a match for
+        //  these players. Should probably handle this in it's own file/function "Match" match.tsx...
+        // const matchData = await fetchMatchDataForUser(user.id);
+        // const userIsInMatch = matchData.some(
+        //   (entry: { red_id: null; green_id: null }) =>
+        //     entry.red_id !== null && entry.green_id !== null,
+        // );
+        // console.log("userMatchFound: ", userIsInMatch);
+        // setIsInMatch(userIsInMatch);
+        // TODO: Make a function to send players into a match when both are marked ready...
+        //  That function will set some current-user state variable we need to clear before
+        //  checks are made against that new function.
+        //  TODO: Function + state variable
+
+        console.log("- - - - - - - - - - - - - - - - -");
       } catch (error) {
         // console.error("Error fetching queue table...");
       }
@@ -167,14 +200,16 @@ const Queue = () => {
         { event: "*", schema: "public", table: "queue" },
         (payload) => {
           console.log("Queue changed: ", payload);
-          fetchingEntries();
+          fetchingEntries(); // TODO: Forgot completely what this does... Must test
 
-          // TODO: Is this needed? Probably not.
           const updateId = payload.new as QueueEntry;
           if (updateId) {
             setMatchId(updateId.match_id);
             setRedId(updateId.red_id);
             setGreenId(updateId.green_id);
+            setQueueStatus(updateId.queue_status);
+            setRedReady(updateId.red_ready);
+            setGreenReady(updateId.green_ready);
           }
         },
       )
@@ -314,8 +349,8 @@ const Queue = () => {
   };
 
   /*
-  * Function to mark players are ready... */
-  const markPlayerReady = async (matchId: string, playerId: string) => {
+   * Function to mark players are ready... */
+  const acceptPlayerReady = async (matchId: string, playerId: string) => {
     if (!user) return;
 
     try {
@@ -347,10 +382,39 @@ const Queue = () => {
   };
 
   /*
-  * TODO: Create function to decline a ready check when match is found,
-  *  whereupon the player that declined is simply removed from the queue.
-  *  Could also make it so the whole entry is destroyed and the function
-  *  "handleEnterQueue" is called to re-queue the other person. */
+  * This function is slightly more complicated, in that it needs to:
+  * 1. End the queue by deleting the entry
+  * 2. Notify the other user that the match was declined */
+  const declinePlayerReady = async (matchId: string, playerId: string) => {
+    if (!user) return;
+
+    try {
+      const match = await supabase
+          .from("queue")
+          .select("*")
+          .eq("match_id", matchId)
+          .single();
+
+      if (match.error) throw match.error;
+
+      // Mark player ready in the updated payload.
+      const updatePayload =
+          match.data.red_id === playerId
+              ? { red_ready: false }
+              : { green_ready: false };
+
+      const { error: updateError } = await supabase
+          .from("queue")
+          .update(updatePayload)
+          .eq("match_id", matchId);
+
+      if (updateError) throw updateError;
+
+      console.log("Player marked as declined (not ready)...");
+    } catch (error) {
+      console.error("Error marking player as declined (not ready)...:", error);
+    }
+  }
 
   const checkIfPlayersReadyThenStartMatch = async (matchId: string) => {
     try {
@@ -467,24 +531,33 @@ const Queue = () => {
   return (
     <div>
       <h2>Queue Status</h2>
+
       {!isQueued && !isInMatch && (
         <Button onClick={handleEnterQueue} className="m-4">
           Join Queue
         </Button>
       )}
+
       {isQueued && (
         <p>
           You are currently in the queue. Please wait for your match to start.
         </p>
       )}
+
       {isQueued && matchFound && (
         <div>
-          <p>Found match. Please press Ready to start.</p>
+          <p>Found match!</p>
           <Button
-            onClick={() => matchId && user && markPlayerReady(matchId, user.id)}
+            onClick={() => matchId && user && acceptPlayerReady(matchId, user.id)}
             className="m-4"
           >
-            Ready
+            Accept
+          </Button>
+          <Button
+              onClick={() => matchId && user && declinePlayerReady(matchId, user.id)}
+              className="m-4"
+          >
+            Decline
           </Button>
         </div>
       )}
