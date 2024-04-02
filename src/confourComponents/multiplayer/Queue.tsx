@@ -1,62 +1,22 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
-import { useNavigate, useParams } from "react-router-dom";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button.tsx";
 
-import { IMultiplayerGame } from "@/confourComponents/multiplayer/IMultiplayerGame.tsx";
 import {
-  InstanceStatus,
-  PlayerStatus,
-} from "@/confourComponents/multiplayer/multiplayer-types.tsx";
-import {
-  GameStatus,
-  Player,
   TokenBoard,
+  QueueEntry,
+  QueueStatus,
+  MatchEntry,
 } from "@/confourComponents/game/types.tsx";
 import { generateEmptyBoard } from "@/confourComponents/game/game-logic.tsx";
-import { Simulate } from "react-dom/test-utils";
-import error = Simulate.error;
-
-type QueueStatus = "1" | "2" | null;
-type QueuePlayerStatus =
-  | "queued"
-  | "accepted"
-  | "declined"
-  | "timeout"
-  | ""
-  | null;
-type MatchStatus = "active" | "ended" | "tentative" | null;
-
-interface QueueEntry {
-  match_id: string | null;
-  red_id: string | null;
-  red_status: QueuePlayerStatus;
-  green_id: string | null;
-  green_status: QueuePlayerStatus;
-  queue_status: QueueStatus;
-  red_ready: boolean;
-  green_ready: boolean;
-}
-
-interface MatchEntry {
-  match_id: string;
-  match_status: MatchStatus;
-  game_status: GameStatus;
-  red_id: string;
-  green_id: string;
-  move_number: number;
-  made_move: string;
-  board: TokenBoard;
-  current_player: Player;
-}
 
 const Queue = () => {
   const { user } = useAuth();
 
-  /*
-   * These state variables are related to the "queue" table... */
+  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   *  These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [matchId, setMatchId] = useState<string | null>("");
@@ -65,25 +25,21 @@ const Queue = () => {
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
 
-  /*
-   * Related to "matches" table... */
+  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   *  Related to "matches" table... */
   const [matches, setMatches] = useState<MatchEntry | null>(null);
-
   /*
-   * Useful state variables to control the flow of the app... */
-  const [playersAreReady, setPlayersAreReady] = useState<boolean>(false);
+   * Gen empty board when enterMatch executes... */
+  const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
+
+  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   *  Useful state variables to control the flow of the app... */
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
   const [isInMatch, setIsInMatch] = useState<boolean>(false);
-  // If a user declines the match use this state variable to control the notification informing the other user of this...
+  /*
+   * If a user declines the match use this state variable to control the notification informing the other user of this... */
   const [declinedMatch, setDeclinedMatch] = useState<boolean>(false);
-
-  // //
-  // const [confirmationCountdown, setConfirmationCountdown] = useState<number>(0);
-  // // Player and TokenBoard.
-  const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
-  // const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
-  // const [inGame, setInGame] = useState<boolean>(false);
 
   /*
    * Update user state variables for conditional rendering... */
@@ -99,7 +55,7 @@ const Queue = () => {
           .select("*");
 
         if (fetchError) {
-          throw error;
+          throw fetchError;
         }
         // NOTE: Fetching all queue data, and then look for current user.
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -140,15 +96,6 @@ const Queue = () => {
         setMatchFound(usersMatchFound);
         console.log("usersMatchFound: ", usersMatchFound);
 
-        // NOTE: Current user matched against another user?..
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // TODO: This doesn't make any sense to me, look it over again...
-        // const usersMatched = queueData.some(
-        //   (entry) => entry.red_id !== null && entry.green_id !== null,
-        // );
-        // setMatchFound(usersMatched);
-        // console.log("usersMatched: ", usersMatched);
-
         // NOTE: Players ready?
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const updateRedMarkedReady = queueData.some((entry) => entry.red_ready);
@@ -160,29 +107,11 @@ const Queue = () => {
         setGreenReady(updateGreenMarkedReady);
         console.log("Player GREEN marked ready?: ", updateGreenMarkedReady);
 
-        // NOTE: Both users marked as ready?.. (this is redundant?)
+        // NOTE: Both users ready --> enter match...
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const usersMarkedReady = queueData.some(
-          (entry) => entry.red_ready && entry.green_ready,
-        );
-        setPlayersAreReady(usersMarkedReady);
-        console.log("Players are ready: ", usersMarkedReady);
-
-        // NOTE: Fetching match data specific to current user.
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // BUG: There is a problem here, we get an error whenever there isn't a match for
-        //  these players. Should probably handle this in it's own file/function "Match" match.tsx...
-        // const matchData = await fetchMatchDataForUser(user.id);
-        // const userIsInMatch = matchData.some(
-        //   (entry: { red_id: null; green_id: null }) =>
-        //     entry.red_id !== null && entry.green_id !== null,
-        // );
-        // console.log("userMatchFound: ", userIsInMatch);
-        // setIsInMatch(userIsInMatch);
-        // TODO: Make a function to send players into a match when both are marked ready...
-        //  That function will set some current-user state variable we need to clear before
-        //  checks are made against that new function.
-        //  TODO: Function + state variable
+        if (queueData.some((entry) => entry.red_ready && entry.green_ready)) {
+          enterMatch(matchId, redId, greenId); // Creates record in "matches" and cleans up record in "queue"...
+        }
 
         console.log("- - - - - - - - - - - - - - - - -");
       } catch (error) {
@@ -234,7 +163,7 @@ const Queue = () => {
       {
         match_id: newMatchId,
         red_id: user.id,
-        red_status: "queued",
+        red_status: true,
         green_id: null,
         green_status: null,
         queue_status: "1",
@@ -259,7 +188,7 @@ const Queue = () => {
       .update([
         {
           green_id: user.id,
-          green_status: "queued",
+          green_status: true,
           queue_status: "2",
         },
       ])
@@ -420,15 +349,15 @@ const Queue = () => {
    * then it will delete the previous record in the "queue" table, if successful. */
   // TODO: Flow not checked, older function
   const enterMatch = async (
-    matchId: string,
-    redId: string,
-    greenId: string,
+    matchId: string | null,
+    redId: string | null,
+    greenId: string | null,
   ) => {
     if (!user || !redId || !greenId || !matchId) return;
 
     const matchEntry: MatchEntry = {
       match_id: matchId,
-      match_status: "active", // TODO: Consider making this a boolean state variable
+      match_status: true,
       game_status: "inProgress", // Initial "inProgress"... others "draw", "red", "green"...
       red_id: redId,
       green_id: greenId,

@@ -1,12 +1,12 @@
 import { NavLink } from "react-router-dom";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import LoginComponent from "@/confourComponents/LoginComponent.tsx";
+import Login from "@/confourComponents/Login.tsx";
 import React from "react";
 import OnlineTracker from "@/confourComponents/auth/online-tracker.tsx";
 import CreateGame from "@/confourComponents/multiplayer/create-game.tsx";
 
-export const NavComponent = () => {
+export const Nav = () => {
   return (
     <nav className="flex justify-between px-8 relative top-env(safe-area-inset-top) items-center">
       <ul className="flex">
@@ -29,7 +29,7 @@ export const NavComponent = () => {
         <li className="mr-4">{OnlineTracker()}</li>
 
         <li className="mr-4">
-          <LoginComponent />
+          <Login />
         </li>
 
         <li className="mr-4">
@@ -40,4 +40,4 @@ export const NavComponent = () => {
   );
 };
 
-export default NavComponent;
+export default Nav;

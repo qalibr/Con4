@@ -14,7 +14,7 @@ import { LoginCard } from "@/confourComponents/auth/login-card.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
-const LoginComponent = () => {
+const Login = () => {
   const { user, loading } = useAuth();
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
@@ -97,4 +97,4 @@ const LoginComponent = () => {
   );
 };
 
-export default LoginComponent;
+export default Login;
