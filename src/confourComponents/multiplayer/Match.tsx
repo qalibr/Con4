@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import {
-  TokenBoard,
-  MatchEntry,
   GameStatus,
+  MatchEntry,
   Player,
+  TokenBoard,
 } from "@/confourComponents/game/types.tsx";
+import {
+  checkBoardState,
+  generateEmptyBoard,
+} from "@/confourComponents/game/game-logic.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Alert } from "@/components/ui/alert.tsx";
 
 const Match = () => {
   const { user } = useAuth();
@@ -17,13 +22,13 @@ const Match = () => {
   const [matchEntry, setMatchEntry] = useState<MatchEntry | null>(null);
   const [matchId, setMatchId] = useState<string | null>(null);
   const [matchStatus, setMatchStatus] = useState<boolean>(false);
-  const [gameStatus, setGameStatus] = useState<GameStatus>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus | Player>(null);
   const [redId, setRedId] = useState<string | null>(null);
   const [greenId, setGreenId] = useState<string | null>(null);
   const [moveNumber, setMoveNumber] = useState<number>(0);
-  const [madeMove, setMadeMove] = useState<Player>(null);
-  const [board, setBoard] = useState<TokenBoard>();
-  const [currentPlayer, setCurrentPlayer] = useState<Player>(null);
+  const [madeMove, setMadeMove] = useState<Player>(undefined);
+  const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
+  const [currentPlayer, setCurrentPlayer] = useState<Player>(undefined);
 
   useEffect(() => {
     if (!user) return;
@@ -52,8 +57,11 @@ const Match = () => {
           setGreenId(userMatchEntry.green_id);
           setMoveNumber(userMatchEntry.move_number);
           setMadeMove(userMatchEntry.made_move);
-          setBoard(userMatchEntry.board);
           setCurrentPlayer(userMatchEntry.current_player);
+
+          // Parsing the JSON back into a TokenBoard array.
+          const fetchedBoard: TokenBoard = JSON.parse(userMatchEntry.board);
+          setBoard(fetchedBoard);
         }
       } catch (error) {
         console.error("Error fetching entries from 'matches' table: ", error);
@@ -79,8 +87,10 @@ const Match = () => {
             setGreenId(updateId.green_id);
             setMoveNumber(updateId.move_number);
             setMadeMove(updateId.made_move);
-            setBoard(updateId.board);
             setCurrentPlayer(updateId.current_player);
+
+            const updateBoard: TokenBoard = JSON.parse(updateId.board);
+            setBoard(updateBoard);
           }
         },
       )
@@ -90,4 +100,138 @@ const Match = () => {
       matchChannel.unsubscribe();
     };
   }, [user]);
+
+  const handleColumnClick = async (colIndex: number) => {
+    if (!user || !matchId) return;
+
+    // If player is null, change to red. If it is not null, and it is red, change to green.
+    const updateCurrentPlayer = user.id === redId ? "red" : user.id === greenId ? "green" : undefined;
+
+    console.log("Ping");
+    if (updateCurrentPlayer !== currentPlayer) return;
+    console.log("Making move...");
+
+    // Iterate over a particular column, starting from the bottom...
+    const updateBoard = board.map((column) => [...column]);
+    let placed = false;
+    for (let i = 0; i <= updateBoard[colIndex].length - 1; i++) {
+      if (updateBoard[colIndex][i] === null) {
+        updateBoard[colIndex][i] = updateCurrentPlayer;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      return; // Column is full...
+    }
+    const updateMoveNumber: number = moveNumber + 1;
+
+    // Evaluate for a win... Initialized as null, first move sets game inProgress
+    let updateGameStatus = checkBoardState(updateBoard);
+    if (updateGameStatus === null) {
+      console.log("First move made!");
+      updateGameStatus = "inProgress";
+    }
+
+    // Update match status according to game status
+    let updateMatchStatus: boolean = false;
+    if (updateGameStatus === "inProgress") {
+      updateMatchStatus = true; // Game in progress
+    } else if (
+      updateGameStatus === "red" ||
+      updateGameStatus === "green" ||
+      updateGameStatus === "draw"
+    ) {
+      updateMatchStatus = false; // Game over
+    }
+
+    // Turning the TokenBoard array into a JSON string before sending it to database.
+    const jsonBoard = JSON.stringify(updateBoard);
+
+    const updateMatchEntry: MatchEntry = {
+      match_id: matchId,
+      game_status: updateGameStatus,
+      match_status: updateMatchStatus,
+      red_id: redId,
+      green_id: greenId,
+      move_number: updateMoveNumber,
+      made_move: updateCurrentPlayer,
+      board: jsonBoard,
+      current_player: updateCurrentPlayer,
+    };
+
+    try {
+      const { error: updateError } = await supabase
+        .from("matches")
+        .update(updateMatchEntry)
+        .eq("match_id", matchId)
+        .select();
+
+      if (updateError) throw updateError;
+      setGameStatus(updateGameStatus);
+      setMatchStatus(updateMatchStatus);
+      setMoveNumber(updateMoveNumber);
+      setCurrentPlayer(updateCurrentPlayer);
+      setBoard(updateBoard);
+    } catch (error) {
+      console.error("Error when trying to update 'matches' table: ", error);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "85vh",
+      }}
+    >
+      {/* Clickable columns */}
+      <div style={{ display: "flex" }}>
+        {matchStatus &&
+          board.map((column, columnIndex) => (
+            <div
+              key={columnIndex}
+              style={{
+                display: "flex",
+                flexDirection: "column-reverse",
+                margin: "5px",
+              }}
+            >
+              {column.map((cell, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  onClick={() => handleColumnClick(columnIndex)}
+                  style={{
+                    width: "50px",
+                    height: "50px",
+                    border: "1px solid black",
+                    backgroundColor: cell || "white",
+                  }}
+                ></div>
+              ))}
+            </div>
+          ))}
+      </div>
+
+      {/* Notify user of win/loss. Allow them to reset game at any time. */}
+      <div style={{ marginTop: "20px" }}>
+        <ul className="flex-auto items-center">
+          <li style={{ marginTop: "0px" }}>
+            {user && gameStatus !== "inProgress" && matchId && (
+              <Alert>
+                Game Over:{" "}
+                {gameStatus === "draw" ? "Draw" : `Winner is ${gameStatus}`}
+              </Alert>
+            )}
+          </li>
+          <li>{user && matchId && <p>Move Number: {moveNumber}</p>}</li>
+        </ul>
+      </div>
+    </div>
+  );
 };
+
+export default Match;

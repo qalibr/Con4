@@ -396,6 +396,10 @@ const Queue = () => {
   ) => {
     if (!user || !redId || !greenId || !matchId) return;
 
+    // Converting to JSON format before inserting, this way we can maintain the array format we need
+    // when we retrieve the record later by parsing it.
+    const jsonBoard = JSON.stringify(board);
+
     const matchEntry: MatchEntry = {
       match_id: matchId,
       match_status: true,
@@ -403,8 +407,8 @@ const Queue = () => {
       red_id: redId,
       green_id: greenId,
       move_number: 0,
-      made_move: null,
-      board: board,
+      made_move: undefined,
+      board: jsonBoard,
       current_player: "red",
     };
 
