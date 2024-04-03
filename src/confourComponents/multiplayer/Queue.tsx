@@ -54,65 +54,33 @@ const Queue = () => {
           .from("queue")
           .select("*");
 
-        if (fetchError) {
-          throw fetchError;
-        }
+        if (fetchError) throw fetchError;
+
         // NOTE: Fetching all queue data, and then look for current user.
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        setCurrentQueueEntry(queueData);
+        const userQueueEntry = queueData.find(entry => entry.red_id === user.id || entry.green_id === user.id);
 
-        // NOTE: See if current user is queued...
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const userIsQueued = queueData.some(
-          (entry) => entry.red_id === user.id || entry.green_id === user.id,
-        );
-        setIsQueued(userIsQueued);
-        console.log("userIsQueued: ", userIsQueued);
+        if (userQueueEntry) {
+          setCurrentQueueEntry(userQueueEntry);
+          setIsQueued(true);
+          setMatchId(userQueueEntry.match_id);
+          setRedId(userQueueEntry.red_id);
+          setGreenId(userQueueEntry.green_id);
+          setQueueStatus(userQueueEntry.queue_status);
+          setRedReady(userQueueEntry.red_ready);
+          setGreenReady(userQueueEntry.green_ready);
 
-        // NOTE: The queue status?
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const queueStatus2 = queueData.some(
-          (entry) => entry.red_id !== null && entry.green_id !== null,
-        );
-        const queueStatus1 = queueData.some(
-          (entry) =>
-            (entry.red_id !== null && entry.green_id === null) ||
-            (entry.red_id === null && entry.green_id !== null),
-        );
-        if (queueStatus2) {
-          setQueueStatus("2");
-        } else if (queueStatus1) {
-          setQueueStatus("1");
+          // Match found?
+          setMatchFound(!!(userQueueEntry.red_id && userQueueEntry.green_id));
+
+          // Enter match if both players are ready...
+          if (userQueueEntry.red_ready && userQueueEntry.green_ready) {
+            enterMatch(userQueueEntry.match_id, userQueueEntry.red_id, userQueueEntry.green_id);
+          }
         } else {
-          setQueueStatus(null);
+          setIsQueued(false);
+          setMatchFound(false);
         }
-        console.log("Queue status: ", queueStatus);
-
-        // NOTE: Match found? ...
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const usersMatchFound = queueData.some(
-          (entry) => entry.red_id && entry.green_id,
-        );
-        setMatchFound(usersMatchFound);
-        console.log("usersMatchFound: ", usersMatchFound);
-
-        // NOTE: Players ready?
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const updateRedMarkedReady = queueData.some((entry) => entry.red_ready);
-        setRedReady(updateRedMarkedReady);
-        console.log("Player RED marked ready?: ", updateRedMarkedReady);
-        const updateGreenMarkedReady = queueData.some(
-          (entry) => entry.green_ready,
-        );
-        setGreenReady(updateGreenMarkedReady);
-        console.log("Player GREEN marked ready?: ", updateGreenMarkedReady);
-
-        // NOTE: Both users ready --> enter match...
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        if (queueData.some((entry) => entry.red_ready && entry.green_ready)) {
-          enterMatch(matchId, redId, greenId); // Creates record in "matches" and cleans up record in "queue"...
-        }
-
         console.log("- - - - - - - - - - - - - - - - -");
       } catch (error) {
         // console.error("Error fetching queue table...");
@@ -129,7 +97,7 @@ const Queue = () => {
         { event: "*", schema: "public", table: "queue" },
         (payload) => {
           console.log("Queue changed: ", payload);
-          fetchingEntries(); // TODO: Forgot completely what this does... Must test
+          fetchingEntries();
           const updateId = payload.new as QueueEntry;
           if (updateId) {
             setMatchId(updateId.match_id);
@@ -196,10 +164,9 @@ const Queue = () => {
 
     if (error) {
       console.error("Error inserting new entry to 'queue' table: ", error);
-      return;
+    } else {
+      setIsQueued(true);
     }
-
-    setIsQueued(true);
   };
 
   /*
@@ -207,14 +174,27 @@ const Queue = () => {
   const handleEnterQueue = async () => {
     if (!user) return;
 
-    const entryToJoin = currentQueueEntry.find(
-      (entry) => entry.queue_status === "1" && entry.red_id !== user.id,
-    );
+    // Fetch all queue entries with value "1" indicating there is an open spot
+    const { data: queueEntries, error } = await supabase
+        .from("queue")
+        .select("*")
+        .eq("queue_status", "1");
+
+    if (error) {
+      console.error("Error fetching queue entries: ", error);
+      return;
+    }
+
+    // Identifying the open entry the user can join, if it exists.
+    const entryToJoin = queueEntries.find(entry => entry.red_id !== user.id && !entry.green_id);
 
     if (entryToJoin) {
-      await joinEntry(entryToJoin.match_id); // Pass the match_id
+      await joinEntry(entryToJoin.match_id);
+      console.log("Joining entry: ", entryToJoin.match_id);
     } else {
+      // If no open entry exists, create a new one...
       await createEntry();
+      console.log("No open entries found, creating new...");
     }
   };
 
