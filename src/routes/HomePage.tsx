@@ -1,5 +1,5 @@
 import useAuth from "@/confourHooks/useAuth.tsx";
-import Multiplayer from "@/confourComponents/Multiplayer.tsx";
+import Multiplayer from "@/confourComponents/game/Multiplayer.tsx";
 
 function HomePage() {
   const { user } = useAuth();

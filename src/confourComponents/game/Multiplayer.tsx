@@ -21,19 +21,19 @@ import { Alert } from "@/components/ui/alert.tsx";
 const Multiplayer = () => {
   const { user } = useAuth();
 
-  // General stuff
+  // ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const [matchId, setMatchId] = useState<string | null>(null);
   const [redId, setRedId] = useState<string | null>(null);
   const [greenId, setGreenId] = useState<string | null>(null);
 
-  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
 
-  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  Related to "matches" table... */
   const [matchEntry, setMatchEntry] = useState<MatchEntry | null>(null);
   const [gameStatus, setGameStatus] = useState<GameStatus | Player>(null);
@@ -41,21 +41,17 @@ const Multiplayer = () => {
   const [madeMove, setMadeMove] = useState<Player>(undefined);
   const [currentPlayer, setCurrentPlayer] = useState<Player>(undefined);
   const [matchStatus, setMatchStatus] = useState<boolean>(false);
-
-  /*
-   * Gen empty board when enterMatch executes... */
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
 
-  /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  Useful state variables to control the flow of the app... */
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
-  /*
-   * If a user declines the match use this state variable to control the notification informing the other user of this... */
   const [declineMatch, setDeclineMatch] = useState<boolean>(false);
 
-  /* QUEUE
-   * Update user state variables for conditional rendering... */
+  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   *  QUEUE
+   *  Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
 
@@ -140,8 +136,9 @@ const Multiplayer = () => {
     };
   }, [user]);
 
-  /* MATCH
-   * Update user state variables for conditional rendering... */
+  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   *  MATCH
+   *  Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
 
@@ -153,7 +150,7 @@ const Multiplayer = () => {
 
         if (fetchError) throw fetchError;
 
-        // NOTE: Fetching all match data, and then look for current user.
+        // ccc Fetching all match data, and then look for current user.
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const userMatchData = matchData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
@@ -424,7 +421,6 @@ const Multiplayer = () => {
   /*
    * This function will enter match, meaning it will create an entry in "matches" table,
    * then it will delete the previous record in the "queue" table, if successful. */
-  // TODO: Flow not checked, older function
   const enterMatch = async (
     matchId: string | null,
     redId: string | null,
@@ -481,39 +477,6 @@ const Multiplayer = () => {
     setMatchFound(false);
     setMatchStatus(true);
     setMatchEntry(matchEntry);
-  };
-
-  const fetchMatchDataForUser = async (uid: string) => {
-    let queryCondition = null;
-    if (uid) {
-      queryCondition = `red_id.eq.${uid},green_id.eq.${uid}`;
-    }
-
-    if (queryCondition) {
-      try {
-        const { data: matchData, error: matchError } = await supabase
-          .from("matches")
-          .select("*")
-          .or(queryCondition)
-          .single();
-
-        if (matchError) throw matchError;
-
-        if (matchData) {
-          console.log("Fetching match data was successful...");
-          setMatchFound(true);
-          return matchData;
-        } else {
-          console.log("No current match for the user.");
-          setMatchFound(false);
-        }
-      } catch (error) {
-        console.error("Fetching match data failed...", error);
-      }
-    } else {
-      console.log("Invalid user IDs...");
-      setMatchFound(false);
-    }
   };
 
   const handleColumnClick = async (colIndex: number) => {
@@ -584,6 +547,7 @@ const Multiplayer = () => {
         .select();
 
       if (updateError) throw updateError;
+
       setGameStatus(updateGameStatus);
       setMatchStatus(updateMatchStatus);
       setMoveNumber(updateMoveNumber);
