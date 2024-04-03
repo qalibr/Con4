@@ -20,20 +20,18 @@ import { Alert } from "@/components/ui/alert.tsx";
 
 const Multiplayer = () => {
   const { user } = useAuth();
-
-  // ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const [matchId, setMatchId] = useState<string | null>(null);
   const [redId, setRedId] = useState<string | null>(null);
   const [greenId, setGreenId] = useState<string | null>(null);
 
-  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc
    *  These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
 
-  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc
    *  Related to "matches" table... */
   const [matchEntry, setMatchEntry] = useState<MatchEntry | null>(null);
   const [gameStatus, setGameStatus] = useState<GameStatus | Player>(null);
@@ -43,13 +41,13 @@ const Multiplayer = () => {
   const [matchStatus, setMatchStatus] = useState<boolean>(false);
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
 
-  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc
    *  Useful state variables to control the flow of the app... */
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
   const [declineMatch, setDeclineMatch] = useState<boolean>(false);
 
-  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc
    *  QUEUE
    *  Update user state variables for conditional rendering... */
   useEffect(() => {
@@ -66,7 +64,6 @@ const Multiplayer = () => {
         if (fetchError) throw fetchError;
 
         // NOTE: Fetching all queue data, and then look for current user.
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const userQueueEntry = queueData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
@@ -136,7 +133,7 @@ const Multiplayer = () => {
     };
   }, [user]);
 
-  /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /* ccc
    *  MATCH
    *  Update user state variables for conditional rendering... */
   useEffect(() => {
@@ -150,8 +147,7 @@ const Multiplayer = () => {
 
         if (fetchError) throw fetchError;
 
-        // ccc Fetching all match data, and then look for current user.
-        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // NOTE: Fetching all match data, and then look for current user.
         const userMatchData = matchData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
@@ -213,8 +209,8 @@ const Multiplayer = () => {
     };
   }, [user]);
 
-  /*
-   * A function to create a new entry in the "queue" table... */
+  /* ccc
+   *  A function to create a new entry in the "queue" table... */
   const createEntry = async () => {
     if (!user) return;
     const newMatchId = uuidv4();
@@ -238,8 +234,8 @@ const Multiplayer = () => {
     setIsQueued(true);
   };
 
-  /*
-   * Function to join an existing entry in the "queue" table... */
+  /* ccc
+   *  Function to join an existing entry in the "queue" table... */
   const joinEntry = async (matchId: string | null) => {
     if (!user || !matchId) return;
 
@@ -261,8 +257,8 @@ const Multiplayer = () => {
     }
   };
 
-  /*
-   * Function to join the queue */
+  /* ccc
+   *  Function to join the queue */
   const handleEnterQueue = async () => {
     if (!user) return;
 
@@ -355,8 +351,8 @@ const Multiplayer = () => {
     setMatchFound(false);
   };
 
-  /*
-   * Function to mark players are ready... */
+  /* ccc
+   *  Function to mark players are ready... */
   const acceptPlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId) return;
 
@@ -388,10 +384,10 @@ const Multiplayer = () => {
     }
   };
 
-  /*
-   * This function needs to:
-   * 1. End the queue by deleting the entry
-   * 2. Notify the other user that the match was declined */
+  /* ccc
+   *  This function needs to:
+   *  1. End the queue by deleting the entry
+   *  2. Notify the other user that the match was declined */
   const declinePlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId) return;
 
@@ -418,9 +414,9 @@ const Multiplayer = () => {
     }
   };
 
-  /*
-   * This function will enter match, meaning it will create an entry in "matches" table,
-   * then it will delete the previous record in the "queue" table, if successful. */
+  /* ccc
+   *  This function will enter match, meaning it will create an entry in "matches" table,
+   *  then it will delete the previous record in the "queue" table, if successful. */
   const enterMatch = async (
     matchId: string | null,
     redId: string | null,
@@ -479,6 +475,8 @@ const Multiplayer = () => {
     setMatchEntry(matchEntry);
   };
 
+  /* ccc
+   *  Handling match state variables when players click the columns... */
   const handleColumnClick = async (colIndex: number) => {
     if (!user || !matchId) return;
 
@@ -558,7 +556,7 @@ const Multiplayer = () => {
     }
   };
 
-  // TODO: Make const endMatch function
+  // TODO: Make const endMatch function, pair it with a timeout of some sort to automatically end matches.
 
   return (
     <div>

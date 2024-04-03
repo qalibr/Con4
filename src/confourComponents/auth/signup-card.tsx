@@ -18,29 +18,55 @@ interface Props {
 }
 
 export function SignupCard({ onCancel }: Props) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [username, setUserName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const {data, error: signUpError} = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      onCancel();
+      if (signUpError) throw signUpError;
+
+      if (data.user) {
+        await insertUserDetails(data.user.id, username);
+        onCancel();
+      } else {
+        setError("Signup was successful, but user data is unavailable.");
+      }
+    } catch (error) {
+      console.error("Something went wrong with the signup: ", error);
+    }
+  };
+
+  const insertUserDetails = async (userId: string, username: string) => {
+    if (!userId || !username) {
+      setError("Invalid user data received.");
+      return;
     }
 
-    setLoading(false);
-  };
+    const {error: insertError} = await supabase
+        .from("users")
+        .insert([
+          {
+            user_id: userId,
+            username: username,
+          },
+        ]);
+
+    if (insertError) {
+      setError(insertError.message);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -52,6 +78,18 @@ export function SignupCard({ onCancel }: Props) {
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="grid w-full gap-4">
+
+              <div className="flex flex-col space-y-1.5">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Choose a username"
+                />
+              </div>
+
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
