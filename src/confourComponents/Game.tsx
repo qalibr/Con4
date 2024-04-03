@@ -10,7 +10,7 @@ import {
   GameStatus,
 } from "@/confourComponents/game/types.tsx";
 
-function GameComponent() {
+function Game() {
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red");
   const [gameStatus, setGameStatus] = useState<GameStatus>("inProgress");
@@ -102,4 +102,4 @@ function GameComponent() {
   );
 }
 
-export default GameComponent;
+export default Game;

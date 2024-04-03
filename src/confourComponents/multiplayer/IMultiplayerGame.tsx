@@ -6,7 +6,7 @@ import {
 import { Player, GameStatus } from "@/confourComponents/game/types.tsx";
 
 export interface IMultiplayerGame {
-  game_id: string;
+  game_id: string | undefined;
   instance_status: InstanceStatus;
   game_creator: string;
   player_count: number;

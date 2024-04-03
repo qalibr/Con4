@@ -83,7 +83,7 @@ const Lobby = () => {
         {activeGames.map((game) => (
           <button
             key={game.game_id}
-            onClick={() => handleGameClick(game.game_id)}
+            // onClick={() => handleGameClick(game.game_id)}
             style={{ display: "block", margin: "10px 0" }}
           >
             Join Game: {game.game_id} (Players:{" "}
