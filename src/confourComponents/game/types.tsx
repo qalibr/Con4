@@ -1,7 +1,7 @@
 export type Token = undefined | null | Player; // undefined/null means open spot, Player means token is there or not.
 export type TokenBoard = Token[][]; // Map of tokens to make up a board.
-export type Player = "red" | "green";
-export type GameStatus = "inProgress" | "red" | "green" | "draw";
+export type Player = "red" | "green" | null;
+export type GameStatus = "inProgress" | "red" | "green" | "draw" | null;
 export type QueueStatus = "1" | "2" | null;
 
 export interface QueueEntry {
@@ -16,13 +16,13 @@ export interface QueueEntry {
 }
 
 export interface MatchEntry {
-  match_id: string;
+  match_id: string | null;
   match_status: boolean;
   game_status: GameStatus;
-  red_id: string;
-  green_id: string;
+  red_id: string | null;
+  green_id: string | null;
   move_number: number;
-  made_move: string;
+  made_move: Player;
   board: TokenBoard;
   current_player: Player;
 }

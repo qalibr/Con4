@@ -19,15 +19,16 @@ const Queue = () => {
    *  These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
-  const [matchId, setMatchId] = useState<string | null>("");
-  const [redId, setRedId] = useState<string | null>("");
-  const [greenId, setGreenId] = useState<string | null>("");
+  const [matchId, setMatchId] = useState<string | null>(null);
+  const [redId, setRedId] = useState<string | null>(null);
+  const [greenId, setGreenId] = useState<string | null>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
 
   /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  Related to "matches" table... */
   const [matches, setMatches] = useState<MatchEntry | null>(null);
+
   /*
    * Gen empty board when enterMatch executes... */
   const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
@@ -39,9 +40,9 @@ const Queue = () => {
   const [isInMatch, setIsInMatch] = useState<boolean>(false);
   /*
    * If a user declines the match use this state variable to control the notification informing the other user of this... */
-  const [declinedMatch, setDeclinedMatch] = useState<boolean>(false);
+  const [declineMatch, setDeclineMatch] = useState<boolean>(false);
 
-  /*
+  /* QUEUE
    * Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
@@ -58,7 +59,9 @@ const Queue = () => {
 
         // NOTE: Fetching all queue data, and then look for current user.
         //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        const userQueueEntry = queueData.find(entry => entry.red_id === user.id || entry.green_id === user.id);
+        const userQueueEntry = queueData.find(
+          (entry) => entry.red_id === user.id || entry.green_id === user.id,
+        );
 
         if (userQueueEntry) {
           setCurrentQueueEntry(userQueueEntry);
@@ -75,7 +78,11 @@ const Queue = () => {
 
           // Enter match if both players are ready...
           if (userQueueEntry.red_ready && userQueueEntry.green_ready) {
-            enterMatch(userQueueEntry.match_id, userQueueEntry.red_id, userQueueEntry.green_id);
+            enterMatch(
+              userQueueEntry.match_id,
+              userQueueEntry.red_id,
+              userQueueEntry.green_id,
+            );
           }
         } else {
           setIsQueued(false);
@@ -108,9 +115,9 @@ const Queue = () => {
             setGreenReady(updateId.green_ready);
           }
 
-          if (declinedMatch) {
+          if (declineMatch) {
             console.log("User declined match, returning to lobby...");
-            setDeclinedMatch(false);
+            setDeclineMatch(false); // Reset...
           }
         },
       )
@@ -118,6 +125,58 @@ const Queue = () => {
 
     return () => {
       queueChannel.unsubscribe();
+    };
+  }, [user]);
+
+  /* MATCH
+   * Update user state variables for conditional rendering... */
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchingMatchEntries = async () => {
+      try {
+        const { data: matchData, error: fetchError } = await supabase
+          .from("matches")
+          .select("*");
+
+        if (fetchError) throw fetchError;
+
+        const userMatchData = matchData.find(
+          (entry) => entry.red_id === user.id || entry.green_id === user.id,
+        );
+
+        if (userMatchData) {
+          setMatches(userMatchData);
+          setMatchId(userMatchData.match_id);
+          setIsInMatch(true);
+          console.log("Match id: ", userMatchData.match_id);
+        }
+      } catch (error) {
+        console.error("Error while fetching match entries...", error);
+      }
+    };
+
+    fetchingMatchEntries();
+
+    const matchChannel = supabase
+      .channel(`matches`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
+        (payload) => {
+          console.log("Matches changed", payload);
+          fetchingMatchEntries();
+          const updateId = payload.new as MatchEntry;
+          if (updateId) {
+            setMatchId(updateId.match_id);
+            setIsInMatch(updateId.match_status);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      matchChannel.unsubscribe();
     };
   }, [user]);
 
@@ -176,9 +235,9 @@ const Queue = () => {
 
     // Fetch all queue entries with value "1" indicating there is an open spot
     const { data: queueEntries, error } = await supabase
-        .from("queue")
-        .select("*")
-        .eq("queue_status", "1");
+      .from("queue")
+      .select("*")
+      .eq("queue_status", "1");
 
     if (error) {
       console.error("Error fetching queue entries: ", error);
@@ -186,7 +245,9 @@ const Queue = () => {
     }
 
     // Identifying the open entry the user can join, if it exists.
-    const entryToJoin = queueEntries.find(entry => entry.red_id !== user.id && !entry.green_id);
+    const entryToJoin = queueEntries.find(
+      (entry) => entry.red_id !== user.id && !entry.green_id,
+    );
 
     if (entryToJoin) {
       await joinEntry(entryToJoin.match_id);
@@ -318,7 +379,7 @@ const Queue = () => {
       if (deleteError) throw deleteError;
 
       console.log("Player declined, deleted the entry...");
-      setDeclinedMatch(true);
+      setDeclineMatch(true);
     } catch (error) {
       console.error("Error while attempting to delete queue entry", error);
     }
@@ -342,7 +403,7 @@ const Queue = () => {
       red_id: redId,
       green_id: greenId,
       move_number: 0,
-      made_move: "",
+      made_move: null,
       board: board,
       current_player: "red",
     };
