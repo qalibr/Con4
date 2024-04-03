@@ -9,25 +9,38 @@ import {
   QueueEntry,
   QueueStatus,
   MatchEntry,
+  GameStatus,
+  Player,
 } from "@/confourComponents/game/types.tsx";
-import { generateEmptyBoard } from "@/confourComponents/game/game-logic.tsx";
+import {
+  checkBoardState,
+  generateEmptyBoard,
+} from "@/confourComponents/game/game-logic.tsx";
+import { Alert } from "@/components/ui/alert.tsx";
 
-const Queue = () => {
+const Multiplayer = () => {
   const { user } = useAuth();
+
+  // General stuff
+  const [matchId, setMatchId] = useState<string | null>(null);
+  const [redId, setRedId] = useState<string | null>(null);
+  const [greenId, setGreenId] = useState<string | null>(null);
 
   /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  These state variables are related to the "queue" table... */
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
-  const [matchId, setMatchId] = useState<string | null>(null);
-  const [redId, setRedId] = useState<string | null>(null);
-  const [greenId, setGreenId] = useState<string | null>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
 
   /* NOTE: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  Related to "matches" table... */
-  const [matches, setMatches] = useState<MatchEntry | null>(null);
+  const [matchEntry, setMatchEntry] = useState<MatchEntry | null>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus | Player>(null);
+  const [moveNumber, setMoveNumber] = useState<number>(0);
+  const [madeMove, setMadeMove] = useState<Player>(undefined);
+  const [currentPlayer, setCurrentPlayer] = useState<Player>(undefined);
+  const [matchStatus, setMatchStatus] = useState<boolean>(false);
 
   /*
    * Gen empty board when enterMatch executes... */
@@ -37,7 +50,6 @@ const Queue = () => {
    *  Useful state variables to control the flow of the app... */
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
-  const [isInMatch, setIsInMatch] = useState<boolean>(false);
   /*
    * If a user declines the match use this state variable to control the notification informing the other user of this... */
   const [declineMatch, setDeclineMatch] = useState<boolean>(false);
@@ -141,17 +153,32 @@ const Queue = () => {
 
         if (fetchError) throw fetchError;
 
+        // NOTE: Fetching all match data, and then look for current user.
+        //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         const userMatchData = matchData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
 
         if (userMatchData) {
-          setMatches(userMatchData);
+          setMatchEntry(userMatchData);
           setMatchId(userMatchData.match_id);
-          setIsInMatch(true);
-          console.log("Match id: ", userMatchData.match_id);
+          setMatchStatus(userMatchData.match_status);
+          setGameStatus(userMatchData.game_status);
+          setRedId(userMatchData.red_id);
+          setGreenId(userMatchData.green_id);
+          setMoveNumber(userMatchData.move_number);
+          setMadeMove(userMatchData.made_move);
+          setCurrentPlayer(userMatchData.current_player);
+
+          // Parsing the JSON back into a TokenBoard array.
+          const fetchedBoard: TokenBoard = JSON.parse(userMatchData.board);
+          setBoard(fetchedBoard);
+          console.log("Match data fetched...", userMatchData);
+        } else {
+          setMatchStatus(false);
         }
       } catch (error) {
+        setMatchStatus(false);
         console.error("Error while fetching match entries...", error);
       }
     };
@@ -168,8 +195,17 @@ const Queue = () => {
           fetchingMatchEntries();
           const updateId = payload.new as MatchEntry;
           if (updateId) {
+            setMatchStatus(updateId.match_status);
             setMatchId(updateId.match_id);
-            setIsInMatch(updateId.match_status);
+            setGameStatus(updateId.game_status);
+            setRedId(updateId.red_id);
+            setGreenId(updateId.green_id);
+            setMoveNumber(updateId.move_number);
+            setMadeMove(updateId.made_move);
+            setCurrentPlayer(updateId.current_player);
+
+            const updateBoard: TokenBoard = JSON.parse(updateId.board);
+            setBoard(updateBoard);
           }
         },
       )
@@ -443,8 +479,8 @@ const Queue = () => {
 
     setIsQueued(false);
     setMatchFound(false);
-    setIsInMatch(true);
-    setMatches(matchEntry);
+    setMatchStatus(true);
+    setMatchEntry(matchEntry);
   };
 
   const fetchMatchDataForUser = async (uid: string) => {
@@ -480,10 +516,90 @@ const Queue = () => {
     }
   };
 
+  const handleColumnClick = async (colIndex: number) => {
+    if (!user || !matchId) return;
+
+    // If player is null, change to red. If it is not null, and it is red, change to green.
+    const updateCurrentPlayer =
+      user.id === redId ? "red" : user.id === greenId ? "green" : undefined;
+
+    console.log("Ping");
+    if (updateCurrentPlayer !== currentPlayer) return;
+    console.log("Making move...");
+
+    // Iterate over a particular column, starting from the bottom...
+    const updateBoard = board.map((column) => [...column]);
+    let placed = false;
+    for (let i = 0; i <= updateBoard[colIndex].length - 1; i++) {
+      if (updateBoard[colIndex][i] === null) {
+        updateBoard[colIndex][i] = updateCurrentPlayer;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      return; // Column is full...
+    }
+    const updateMoveNumber: number = moveNumber + 1;
+
+    // Evaluate for a win... Initialized as null, first move sets game inProgress
+    let updateGameStatus = checkBoardState(updateBoard);
+    if (updateGameStatus === null) {
+      console.log("First move made!");
+      updateGameStatus = "inProgress";
+    }
+
+    // Update match status according to game status
+    let updateMatchStatus: boolean = false;
+    if (updateGameStatus === "inProgress") {
+      updateMatchStatus = true; // Game in progress
+    } else if (
+      updateGameStatus === "red" ||
+      updateGameStatus === "green" ||
+      updateGameStatus === "draw"
+    ) {
+      updateMatchStatus = false; // Game over
+    }
+
+    // Turning the TokenBoard array into a JSON string before sending it to database.
+    const jsonBoard = JSON.stringify(updateBoard);
+
+    const updateMatchEntry: MatchEntry = {
+      match_id: matchId,
+      game_status: updateGameStatus,
+      match_status: updateMatchStatus,
+      red_id: redId,
+      green_id: greenId,
+      move_number: updateMoveNumber,
+      made_move: updateCurrentPlayer,
+      board: jsonBoard,
+      current_player: updateCurrentPlayer,
+    };
+
+    try {
+      const { error: updateError } = await supabase
+        .from("matches")
+        .update(updateMatchEntry)
+        .eq("match_id", matchId)
+        .select();
+
+      if (updateError) throw updateError;
+      setGameStatus(updateGameStatus);
+      setMatchStatus(updateMatchStatus);
+      setMoveNumber(updateMoveNumber);
+      setCurrentPlayer(updateCurrentPlayer);
+      setBoard(updateBoard);
+    } catch (error) {
+      console.error("Error when trying to update 'matches' table: ", error);
+    }
+  };
+
+  // TODO: Make const endMatch function
+
   return (
     <div>
       {/*<h2>Queue Status</h2>*/}
-      {!isQueued && !isInMatch && (
+      {!isQueued && !matchStatus && (
         <Button onClick={handleEnterQueue} className="m-4">
           Join Queue
         </Button>
@@ -521,7 +637,7 @@ const Queue = () => {
             </Button>
           </div>
         )}
-      {isInMatch && <p>You are currently in a match.</p>}
+      {matchStatus && <p>You are currently in a match.</p>}
 
       {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
       {isQueued && !matchFound && (
@@ -531,14 +647,61 @@ const Queue = () => {
       )}
 
       {/* Render information about the current match if the user is in one... */}
-      {isInMatch && matches && (
-        <div>
-          <h3>Current Match</h3>
-          <p>Match ID: {matches.match_id}</p>
+      {matchStatus && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "85vh",
+          }}
+        >
+          {/* Clickable columns */}
+          <div style={{ display: "flex" }}>
+            {matchStatus &&
+              board.map((column, columnIndex) => (
+                <div
+                  key={columnIndex}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column-reverse",
+                    margin: "5px",
+                  }}
+                >
+                  {column.map((cell, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      onClick={() => handleColumnClick(columnIndex)}
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        border: "1px solid black",
+                        backgroundColor: cell || "white",
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              ))}
+          </div>
+
+          <div style={{ marginTop: "20px" }}>
+            <ul className="flex-auto items-center">
+              <li style={{ marginTop: "0px" }}>
+                {user && gameStatus !== "inProgress" && matchId && (
+                  <Alert>
+                    Game Over:{" "}
+                    {gameStatus === "draw" ? "Draw" : `Winner is ${gameStatus}`}
+                  </Alert>
+                )}
+              </li>
+              <li>{user && matchId && <p>Move Number: {moveNumber}</p>}</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default Queue;
+export default Multiplayer;

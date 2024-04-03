@@ -1,6 +1,5 @@
 import useAuth from "@/confourHooks/useAuth.tsx";
-import Queue from "@/confourComponents/multiplayer/Queue.tsx";
-import Match from "@/confourComponents/multiplayer/Match.tsx";
+import Multiplayer from "@/confourComponents/Multiplayer.tsx";
 
 function HomePage() {
   const { user } = useAuth();
@@ -8,8 +7,7 @@ function HomePage() {
     <>
       {user ? (
         <div>
-          <Queue />
-          <Match />
+          <Multiplayer />
         </div>
       ) : (
         // <Game />
