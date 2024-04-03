@@ -62,6 +62,7 @@ const Match = () => {
           // Parsing the JSON back into a TokenBoard array.
           const fetchedBoard: TokenBoard = JSON.parse(userMatchEntry.board);
           setBoard(fetchedBoard);
+          console.log("Match data fetched...", userMatchEntry);
         }
       } catch (error) {
         console.error("Error fetching entries from 'matches' table: ", error);
@@ -91,6 +92,8 @@ const Match = () => {
 
             const updateBoard: TokenBoard = JSON.parse(updateId.board);
             setBoard(updateBoard);
+          } else if (updateId === null) {
+            setMatchEntry(null);
           }
         },
       )
@@ -105,7 +108,8 @@ const Match = () => {
     if (!user || !matchId) return;
 
     // If player is null, change to red. If it is not null, and it is red, change to green.
-    const updateCurrentPlayer = user.id === redId ? "red" : user.id === greenId ? "green" : undefined;
+    const updateCurrentPlayer =
+      user.id === redId ? "red" : user.id === greenId ? "green" : undefined;
 
     console.log("Ping");
     if (updateCurrentPlayer !== currentPlayer) return;
@@ -178,6 +182,24 @@ const Match = () => {
     }
   };
 
+  const handleDeleteMatch = async () => {
+    if (!user) return;
+
+    const { error: deleteError } = await supabase
+      .from("matches")
+      .delete()
+      .match({ match_id: matchId });
+
+    if (deleteError) {
+      console.error("Error deleting queue entry: ", deleteError);
+      return;
+    } else {
+      console.log("Queue entry successfully deleted...");
+      setMatchEntry(null);
+      setMatchStatus(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -216,7 +238,14 @@ const Match = () => {
           ))}
       </div>
 
-      {/* Notify user of win/loss. Allow them to reset game at any time. */}
+      {user && matchStatus && (
+        <div>
+          <Button onClick={handleDeleteMatch}>
+            (Debug) Delete Match Record
+          </Button>
+        </div>
+      )}
+
       <div style={{ marginTop: "20px" }}>
         <ul className="flex-auto items-center">
           <li style={{ marginTop: "0px" }}>
