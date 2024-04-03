@@ -483,10 +483,9 @@ const Multiplayer = () => {
     // If player is null, change to red. If it is not null, and it is red, change to green.
     const updateCurrentPlayer =
       user.id === redId ? "red" : user.id === greenId ? "green" : undefined;
+    console.log("updateCurrentPlayer: ", updateCurrentPlayer);
 
-    console.log("Ping");
     if (updateCurrentPlayer !== currentPlayer) return;
-    console.log("Making move...");
 
     // Iterate over a particular column, starting from the bottom...
     const updateBoard = board.map((column) => [...column]);
@@ -501,10 +500,13 @@ const Multiplayer = () => {
     if (!placed) {
       return; // Column is full...
     }
+    console.log("updateBoard: ", updateBoard);
+
     const updateMoveNumber: number = moveNumber + 1;
 
     // Evaluate for a win... Initialized as null, first move sets game inProgress
     let updateGameStatus = checkBoardState(updateBoard);
+    console.log("updateGameStatus: ", updateGameStatus);
     if (updateGameStatus === null) {
       console.log("First move made!");
       updateGameStatus = "inProgress";
