@@ -34,6 +34,7 @@ const Multiplayer = () => {
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
   const [greenReady, setGreenReady] = useState<boolean>(false);
+  const [matchBegin, setMatchBegin] = useState<boolean>(false);
 
   /* ccc
    *  Related to "matches" table... */
@@ -51,13 +52,15 @@ const Multiplayer = () => {
    *  Useful state variables to control the flow of the app... */
   const [isQueued, setIsQueued] = useState<boolean>(false);
   const [matchFound, setMatchFound] = useState<boolean>(false);
-  const [declineMatch, setDeclineMatch] = useState<boolean>(false);
+  // const [declineMatch, setDeclineMatch] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   /* ccc
    *  QUEUE
    *  Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
 
     /*
      * Fetching the entire table... */
@@ -87,21 +90,41 @@ const Multiplayer = () => {
           // Match found?
           setMatchFound(!!(userQueueEntry.red_id && userQueueEntry.green_id));
 
-          // Enter match if both players are ready...
-          if (userQueueEntry.red_ready && userQueueEntry.green_ready) {
-            enterMatch(
-              userQueueEntry.match_id,
-              userQueueEntry.red_id,
-              userQueueEntry.green_id,
-            );
+          // If both players are ready, set match status to true
+          setMatchStatus(
+            userQueueEntry.red_ready && userQueueEntry.green_ready,
+          );
+
+          // if match status is true, set queue and match found to false.
+          if (matchStatus) {
+            setIsQueued(false);
+            setMatchFound(false);
           }
+
+          // Enter match if both players are ready... Queue entry is deleted, so this will not be entered
+          // again by mistake.
+          // if (userQueueEntry.red_ready && userQueueEntry.green_ready) {
+          //   setMatchFound(false);
+          //   setIsQueued(false);
+          //
+          //   // NOTE: I have set setLoading(true) and the beginning of both these functions,
+          //   //  because they are not called anywhere else.
+          //   // await fetchingMatchEntries();
+          //   await enterMatch(
+          //     userQueueEntry.match_id,
+          //     userQueueEntry.red_id,
+          //     userQueueEntry.green_id,
+          //   );
         } else {
+          // setMatchStatus(false); TODO:
           setIsQueued(false);
           setMatchFound(false);
         }
         console.log("- - - - - - - - - - - - - - - - -");
       } catch (error) {
         // console.error("Error fetching queue table...");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -126,10 +149,10 @@ const Multiplayer = () => {
             setGreenReady(updateId.green_ready);
           }
 
-          if (declineMatch) {
-            console.log("User declined match, returning to lobby...");
-            setDeclineMatch(false); // Reset...
-          }
+          // if (declineMatch) {
+          //   console.log("User declined match, returning to lobby...");
+          //   setDeclineMatch(false); // Reset...
+          // }
         },
       )
       .subscribe();
@@ -144,6 +167,7 @@ const Multiplayer = () => {
    *  Update user state variables for conditional rendering... */
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
 
     const fetchingMatchEntries = async () => {
       try {
@@ -169,6 +193,10 @@ const Multiplayer = () => {
           setMoveNumber(userMatchData.move_number);
           setMadeMove(userMatchData.made_move);
           setCurrentPlayer(userMatchData.current_player);
+
+          if (matchStatus) {
+            enterMatch(matchId, redId, greenId);
+          }
 
           // Parsing the JSON back into a TokenBoard array.
           const fetchedBoard: TokenBoard = JSON.parse(userMatchData.board);
@@ -219,7 +247,7 @@ const Multiplayer = () => {
 
   /* ccc
    *  GAME STATE
-   *  Check for changes to game state on moveNumber change... */
+   *  Check for a conclusion to the game... */
   useEffect(() => {
     const checkState = async () => {
       const currentBoardState = checkBoardState(board);
@@ -262,47 +290,62 @@ const Multiplayer = () => {
    *  A function to create a new entry in the "queue" table... */
   const createEntry = async () => {
     if (!user) return;
-    const newMatchId = uuidv4();
+    setLoading(true);
 
-    const { error } = await supabase.from("queue").insert([
-      {
-        match_id: newMatchId,
-        red_id: user.id,
-        red_status: true,
-        green_id: null,
-        green_status: null,
-        queue_status: "1",
-      },
-    ]);
+    try {
+      const newMatchId = uuidv4();
 
-    if (error) {
-      console.error("Error inserting new entry to 'queue' table: ", error);
-      return;
+      const { error } = await supabase.from("queue").insert([
+        {
+          match_id: newMatchId,
+          red_id: user.id,
+          red_status: true,
+          green_id: null,
+          green_status: null,
+          queue_status: "1",
+        },
+      ]);
+
+      if (error) {
+        console.error("Error inserting new entry to 'queue' table: ", error);
+        return;
+      }
+
+      setIsQueued(true);
+    } catch (error) {
+      console.error("Error while trying to create entry...", error);
+    } finally {
+      setLoading(false);
     }
-
-    setIsQueued(true);
   };
 
   /* ccc
    *  Function to join an existing entry in the "queue" table... */
   const joinEntry = async (matchId: string | null) => {
     if (!user || !matchId) return;
+    setLoading(true);
 
-    const { error } = await supabase
-      .from("queue")
-      .update([
-        {
-          green_id: user.id,
-          green_status: true,
-          queue_status: "2",
-        },
-      ])
-      .eq("match_id", matchId);
+    try {
+      const { error } = await supabase
+        .from("queue")
+        .update([
+          {
+            green_id: user.id,
+            green_status: true,
+            queue_status: "2",
+          },
+        ])
+        .eq("match_id", matchId);
 
-    if (error) {
-      console.error("Error inserting new entry to 'queue' table: ", error);
-    } else {
-      setIsQueued(true);
+      if (error) {
+        console.error("Error inserting new entry to 'queue' table: ", error);
+      } else {
+        setIsQueued(true);
+      }
+    } catch (error) {
+      console.error("Error while trying to join queue...", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -310,100 +353,115 @@ const Multiplayer = () => {
    *  Function to join the queue */
   const handleEnterQueue = async () => {
     if (!user) return;
+    setLoading(true);
 
-    // Fetch all queue entries with value "1" indicating there is an open spot
-    const { data: queueEntries, error } = await supabase
-      .from("queue")
-      .select("*")
-      .eq("queue_status", "1");
+    try {
+      // Fetch all queue entries with value "1" indicating there is an open spot
+      const { data: queueEntries, error } = await supabase
+        .from("queue")
+        .select("*")
+        .eq("queue_status", "1");
 
-    if (error) {
-      console.error("Error fetching queue entries: ", error);
-      return;
-    }
+      if (error) {
+        console.error("Error fetching queue entries: ", error);
+        return;
+      }
 
-    // Identifying the open entry the user can join, if it exists.
-    const entryToJoin = queueEntries.find(
-      (entry) => entry.red_id !== user.id && !entry.green_id,
-    );
+      // Identifying the open entry the user can join, if it exists.
+      const entryToJoin = queueEntries.find(
+        (entry) => entry.red_id !== user.id && !entry.green_id,
+      );
 
-    if (entryToJoin) {
-      await joinEntry(entryToJoin.match_id);
-      console.log("Joining entry: ", entryToJoin.match_id);
-    } else {
-      // If no open entry exists, create a new one...
-      await createEntry();
-      console.log("No open entries found, creating new...");
+      if (entryToJoin) {
+        await joinEntry(entryToJoin.match_id);
+        console.log("Joining entry: ", entryToJoin.match_id);
+      } else {
+        // If no open entry exists, create a new one...
+        await createEntry();
+        console.log("No open entries found, creating new...");
+      }
+    } catch (error) {
+      console.error("Error while trying to join queue: ", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLeaveQueue = async () => {
     if (!user || !matchId) return; // Immediately return if user is not aware of any matchId...
+    setLoading(true);
 
-    const { data: queueEntry, error: fetchError } = await supabase
-      .from("queue")
-      .select("*")
-      .eq("match_id", matchId)
-      .single();
-
-    if (fetchError || !queueEntry) {
-      console.error("Error fetching queue entry: ", fetchError);
-      return;
-    }
-
-    let playerCount: number = 0;
-    if (queueEntry.red_id) playerCount++;
-    if (queueEntry.green_id) playerCount++;
-
-    if (playerCount <= 1) {
-      const { error: deleteError } = await supabase
+    try {
+      const { data: queueEntry, error: fetchError } = await supabase
         .from("queue")
-        .delete()
-        .match({ match_id: matchId });
+        .select("*")
+        .eq("match_id", matchId)
+        .single();
 
-      if (deleteError) {
-        console.error("Error deleting queue entry: ", deleteError);
+      if (fetchError || !queueEntry) {
+        console.error("Error fetching queue entry: ", fetchError);
         return;
       }
 
-      console.log("Queue entry deleted successfully...");
-    } else {
-      let updatePayload = {};
+      let playerCount: number = 0;
+      if (queueEntry.red_id) playerCount++;
+      if (queueEntry.green_id) playerCount++;
 
-      if (queueEntry.red_id === user.id) {
-        updatePayload = {
-          red_id: null,
-          red_status: null,
-          queue_status: playerCount - 1,
-        };
-      } else if (queueEntry.green_id === user.id) {
-        updatePayload = {
-          green_id: null,
-          green_status: null,
-          queue_status: playerCount - 1,
-        };
+      if (playerCount <= 1) {
+        const { error: deleteError } = await supabase
+          .from("queue")
+          .delete()
+          .match({ match_id: matchId });
+
+        if (deleteError) {
+          console.error("Error deleting queue entry: ", deleteError);
+          return;
+        }
+
+        console.log("Queue entry deleted successfully...");
+      } else {
+        let updatePayload = {};
+
+        if (queueEntry.red_id === user.id) {
+          updatePayload = {
+            red_id: null,
+            red_status: null,
+            queue_status: playerCount - 1,
+          };
+        } else if (queueEntry.green_id === user.id) {
+          updatePayload = {
+            green_id: null,
+            green_status: null,
+            queue_status: playerCount - 1,
+          };
+        }
+
+        const { error: updateError } = await supabase
+          .from("queue")
+          .update(updatePayload)
+          .eq("match_id", matchId);
+
+        if (updateError) {
+          console.error("Error updating queue entry: ", updateError);
+        }
+
+        console.log("Queue entry updated successfully...");
       }
 
-      const { error: updateError } = await supabase
-        .from("queue")
-        .update(updatePayload)
-        .eq("match_id", matchId);
-
-      if (updateError) {
-        console.error("Error updating queue entry: ", updateError);
-      }
-
-      console.log("Queue entry updated successfully...");
+      setIsQueued(false);
+      setMatchFound(false);
+    } catch (error) {
+      console.error("Error while trying to leave queue...", error);
+    } finally {
+      setLoading(false);
     }
-
-    setIsQueued(false);
-    setMatchFound(false);
   };
 
   /* ccc
    *  Function to mark players are ready... */
   const acceptPlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId) return;
+    setLoading(true);
 
     try {
       const match = await supabase
@@ -430,6 +488,10 @@ const Multiplayer = () => {
       console.log("Player marked as ready");
     } catch (error) {
       console.error("Error marking player as ready:", error);
+    } finally {
+      // setIsQueued(false);
+      // setMatchFound(true);
+      setLoading(false);
     }
   };
 
@@ -439,6 +501,7 @@ const Multiplayer = () => {
    *  2. Notify the other user that the match was declined */
   const declinePlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId) return;
+    setLoading(true);
 
     try {
       const match = await supabase
@@ -457,9 +520,13 @@ const Multiplayer = () => {
       if (deleteError) throw deleteError;
 
       console.log("Player declined, deleted the entry...");
-      setDeclineMatch(true);
+      setMatchStatus(false);
+      setIsQueued(false);
+      setMatchFound(false);
     } catch (error) {
       console.error("Error while attempting to delete queue entry", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -472,57 +539,66 @@ const Multiplayer = () => {
     greenId: string | null,
   ) => {
     if (!user || !redId || !greenId || !matchId) return;
+    setLoading(true);
+    console.log("From enterMatch, matchStatus: ", matchStatus);
 
-    // Converting to JSON format before inserting, this way we can maintain the array format we need
-    // when we retrieve the record later by parsing it.
-    const jsonBoard = JSON.stringify(board);
+    try {
+      // Converting to JSON format before inserting, this way we can maintain the array format we need
+      // when we retrieve the record later by parsing it.
+      const jsonBoard = JSON.stringify(board);
 
-    const matchEntry: MatchEntry = {
-      id: entryId,
-      match_id: matchId,
-      match_status: true,
-      game_status: "inProgress", // Initial "inProgress"... others "draw", "red", "green"...
-      red_id: redId,
-      green_id: greenId,
-      move_number: 0,
-      made_move: null,
-      board: jsonBoard,
-      current_player: "red",
-    };
+      const matchEntry: MatchEntry = {
+        id: entryId,
+        match_id: matchId,
+        match_status: matchStatus,
+        game_status: "inProgress", // Initial "inProgress"... others "draw", "red", "green"...
+        red_id: redId,
+        green_id: greenId,
+        move_number: moveNumber,
+        made_move: null,
+        board: jsonBoard,
+        current_player: "red",
+      };
 
-    // Insert new entry to "matches" table...
-    const { data: insertData, error: insertError } = await supabase
-      .from("matches")
-      .insert(matchEntry);
+      // Only one user needs to do the insert and deletion actions, this will prevent unnecessary errors.
+      if (user.id === redId) {
+        // Insert new entry to "matches" table...
+        const { data: insertData, error: insertError } = await supabase
+          .from("matches")
+          .insert(matchEntry);
 
-    // Make sure nothing went wrong, if it did we return to avoid losing data...
-    if (insertError) {
-      console.error(
-        "Error inserting new entry to 'queue' table: ",
-        insertError,
-      );
-      return;
-    } else {
-      console.log("Matches entry successfully inserted... ", insertData);
+        // Make sure nothing went wrong, if it did we return to avoid losing data...
+        if (insertError) {
+          console.error(
+            "Error inserting new entry to 'queue' table: ",
+            insertError,
+          );
+          return;
+        } else {
+          console.log("Matches entry successfully inserted... ", insertData);
+        }
+
+        // Perform the deletion...
+        const { error: deleteError } = await supabase
+          .from("queue")
+          .delete()
+          .match({ match_id: matchId });
+
+        if (deleteError) {
+          console.error("Error deleting queue entry: ", deleteError);
+          return;
+        } else {
+          console.log("Queue entry successfully deleted...");
+        }
+      }
+
+      setMatchFound(false);
+      setMatchEntry(matchEntry);
+    } catch (error) {
+      console.error("Error while trying to enter match...", error);
+    } finally {
+      setLoading(false);
     }
-
-    // Perform the deletion...
-    const { error: deleteError } = await supabase
-      .from("queue")
-      .delete()
-      .match({ match_id: matchId });
-
-    if (deleteError) {
-      console.error("Error deleting queue entry: ", deleteError);
-      return;
-    } else {
-      console.log("Queue entry successfully deleted...");
-    }
-
-    setIsQueued(false);
-    setMatchFound(false);
-    setMatchStatus(true);
-    setMatchEntry(matchEntry);
   };
 
   /* ccc
@@ -582,6 +658,9 @@ const Multiplayer = () => {
         .eq("match_id", matchId);
 
       if (updateError) throw updateError;
+
+      // Save changes to state variables...
+      setMoveNumber(moveNumber + 1);
     } catch (error) {
       console.error("Error updating 'matches' table: ", error);
     }
@@ -611,134 +690,142 @@ const Multiplayer = () => {
    *  does an unpredictable re-queue into a match before it is over. */
   const gameEnded = async () => {
     /* Do not alter the match entry in supabase, leave it up, and:
-    * 1. Clear state variable 'board'
-    * 2. Set matchStatus to 'false'. This will hide the game, that is not
-    * desirable, so we will need a new conditional state variable, something
-    * we can call "endOfGame" or something to that effect, letting the player
-    * see the game after it ended.
-    *   2.1 Also, this new state variable "endOfGame" can show new buttons:
-    *     2.1.1 "Leave Game" and "Re-match"
-    * 3. Set currentPlayer to "red", but do not alter the table
-    * 4. Set madeMove to null
-    * 5. Reset moveNumber
-    *
-    * It's possible we might need to do something different with the end of game
-    * state. Perhaps flush out everything, and with a new state variable just fetch
-    * the now-static entry from matches and display that.
-    * ... Perhaps name the lobby after the id in 'matches'?
-    * Actually, we can use that id to display the ended game in its static state,
-    * and at the same time flush all the state variables without worrying about
-    * messing up the end-of-game "screen", and thereby maintain the player experience.
-    * That id must be fetched and stored in a state variable, and that will be the only
-    * thing we do not flush. It will be reset when the player enters the queue again.
-    *
-    * ccc
-    *  entryId to maintain end-of-game view for the player.
-    * */
+     * 1. Clear state variable 'board'
+     * 2. Set matchStatus to 'false'. This will hide the game, that is not
+     * desirable, so we will need a new conditional state variable, something
+     * we can call "endOfGame" or something to that effect, letting the player
+     * see the game after it ended.
+     *   2.1 Also, this new state variable "endOfGame" can show new buttons:
+     *     2.1.1 "Leave Game" and "Re-match"
+     * 3. Set currentPlayer to "red", but do not alter the table
+     * 4. Set madeMove to null
+     * 5. Reset moveNumber
+     *
+     * It's possible we might need to do something different with the end of game
+     * state. Perhaps flush out everything, and with a new state variable just fetch
+     * the now-static entry from matches and display that.
+     * ... Perhaps name the lobby after the id in 'matches'?
+     * Actually, we can use that id to display the ended game in its static state,
+     * and at the same time flush all the state variables without worrying about
+     * messing up the end-of-game "screen", and thereby maintain the player experience.
+     * That id must be fetched and stored in a state variable, and that will be the only
+     * thing we do not flush. It will be reset when the player enters the queue again.
+     *
+     * ccc
+     *  entryId to maintain end-of-game view for the player.
+     * */
   };
 
   return (
-    <div>
-      {/*<h2>Queue Status</h2>*/}
-      {!isQueued && !matchStatus && (
-        <Button onClick={handleEnterQueue} className="m-4">
-          Join Queue
-        </Button>
-      )}
-
-      {isQueued && !matchFound && (
-        <p className="m-4">
-          You are currently in the queue. Please wait for your match to start.
-        </p>
-      )}
-
-      {user &&
-        isQueued &&
-        matchFound &&
-        ((user.id === redId && !redReady) ||
-          (user.id === greenId && !greenReady)) && (
-          <div>
-            <p>Found match!</p>
-
-            <Button
-              onClick={() =>
-                matchId && user && acceptPlayerReady(matchId, user.id)
-              }
-              className="m-4"
-            >
-              Accept
+    <div className="flex items-center justify-center h-screen">
+      {loading ? (
+        <div className="lds-dual-ring"></div>
+      ) : (
+        <div className="transform -translate-y-44">
+          {/*<h2>Queue Status</h2>*/}
+          {!isQueued && !matchStatus && (
+            <Button onClick={handleEnterQueue} className="m-4">
+              Join Queue
             </Button>
-            <Button
-              onClick={() =>
-                matchId && user && declinePlayerReady(matchId, user.id)
-              }
-              className="m-4"
-            >
-              Decline
-            </Button>
-          </div>
-        )}
-      {matchStatus && <p>You are currently in a match.</p>}
+          )}
 
-      {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
-      {isQueued && !matchFound && (
-        <Button onClick={handleLeaveQueue} className="m-4">
-          Leave Queue
-        </Button>
-      )}
+          {isQueued && !matchFound && (
+            <p className="m-4">
+              You are currently in the queue. Please wait for your match to
+              start.
+            </p>
+          )}
 
-      {/* Render information about the current match if the user is in one... */}
-      {matchStatus && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "85vh",
-          }}
-        >
-          {/* Clickable columns */}
-          <div style={{ display: "flex" }}>
-            {matchStatus &&
-              board.map((column, columnIndex) => (
-                <div
-                  key={columnIndex}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column-reverse",
-                    margin: "5px",
-                  }}
+          {user &&
+            matchFound &&
+            ((user.id === redId && !redReady) ||
+              (user.id === greenId && !greenReady)) && (
+              <div>
+                <p>Found match!</p>
+
+                <Button
+                  onClick={() =>
+                    matchId && user && acceptPlayerReady(matchId, user.id)
+                  }
+                  className="m-4"
                 >
-                  {column.map((cell, rowIndex) => (
-                    <div
-                      key={rowIndex}
-                      onClick={() => handleColumnClick(columnIndex)}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        border: "1px solid black",
-                        backgroundColor: cell || "white",
-                      }}
-                    ></div>
-                  ))}
-                </div>
-              ))}
-          </div>
+                  Accept
+                </Button>
+                <Button
+                  onClick={() =>
+                    matchId && user && declinePlayerReady(matchId, user.id)
+                  }
+                  className="m-4"
+                >
+                  Decline
+                </Button>
+              </div>
+            )}
 
-          <div style={{ marginTop: "20px" }}>
-            <ul className="flex-auto items-center">
-              <li style={{ marginTop: "0px" }}>
-                {user && gameStatus !== "inProgress" && matchId && (
-                  <Alert>
-                    Game Over:{" "}
-                    {gameStatus === "draw" ? "Draw" : `Winner is ${gameStatus}`}
-                  </Alert>
-                )}
-              </li>
-              <li>{user && matchId && <p>Move Number: {moveNumber}</p>}</li>
-            </ul>
-          </div>
+          {matchStatus && <p>You are currently in a match.</p>}
+
+          {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
+          {isQueued && !matchFound && (
+            <Button onClick={handleLeaveQueue} className="m-4">
+              Leave Queue
+            </Button>
+          )}
+
+          {/* Render information about the current match if the user is in one... */}
+          {matchStatus && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "85vh",
+              }}
+            >
+              {/* Clickable columns */}
+              <div style={{ display: "flex" }}>
+                {board.map((column, columnIndex) => (
+                  <div
+                    key={columnIndex}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column-reverse",
+                      margin: "5px",
+                    }}
+                  >
+                    {column.map((cell, rowIndex) => (
+                      <div
+                        key={rowIndex}
+                        onClick={() => handleColumnClick(columnIndex)}
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          border: "1px solid black",
+                          backgroundColor: cell || "white",
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: "20px" }}>
+                <ul className="flex-auto items-center">
+                  <li style={{ marginTop: "0px" }}>
+                    {gameStatus !== "inProgress" && matchId && (
+                      <Alert>
+                        Game Over:{" "}
+                        {gameStatus === "draw"
+                          ? "Draw"
+                          : `Winner is ${gameStatus}`}
+                      </Alert>
+                    )}
+                  </li>
+                  <li>{matchId && <p>Move Number: {moveNumber}</p>}</li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
