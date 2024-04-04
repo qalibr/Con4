@@ -23,7 +23,7 @@ const Login = () => {
     await supabase.auth.signOut();
   };
 
-  const loginGhub = async () => {
+  const loginGitHub = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "github",
     });
@@ -76,7 +76,7 @@ const Login = () => {
             <DropdownMenuItem onClick={toggleLoginCard}>
               Login with Email
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={loginGhub}>
+            <DropdownMenuItem onClick={loginGitHub}>
               Login with GitHub
             </DropdownMenuItem>
           </DropdownMenuContent>
