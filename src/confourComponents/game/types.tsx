@@ -2,15 +2,16 @@ export type Token = Player | null; // null means open spot, Player means token i
 export type TokenBoard = Token[][]; // Map of tokens to make up a board.
 export type Player = "red" | "green" | null;
 export type GameStatus = "inProgress" | "draw" | null;
-export type QueueStatus = "1" | "2" | null;
+export type QueueCount = "1" | "2" | null;
 
 export interface QueueEntry {
   match_id: string | null;
+  match_found: boolean;
   red_id: string | null;
   red_status: boolean | null;
   green_id: string | null;
   green_status: boolean | null;
-  queue_status: QueueStatus;
+  queue_count: QueueCount;
   red_ready: boolean;
   green_ready: boolean;
 }
