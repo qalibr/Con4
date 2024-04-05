@@ -27,7 +27,7 @@ const Multiplayer = () => {
 
   /* ccc
    *  These state variables are related to the "queue" table... */
-  // Interface state variable correspoinding to the 'queue' table
+  // Interface state variable corresponding to the 'queue' table
   const [currentQueueEntry, setCurrentQueueEntry] = useState<QueueEntry[]>([]);
   const [queueCount, setQueueCount] = useState<QueueCount>(null);
   const [redReady, setRedReady] = useState<boolean>(false);
@@ -780,6 +780,7 @@ const Multiplayer = () => {
           console.error("Error deleting queue entry: ", deleteError);
           return;
         } else {
+          setCurrentQueueEntry([]); // Purge the QueueEntry after deletions so data doesn't hang around...
           console.log("Queue entry successfully deleted...");
         }
       }
