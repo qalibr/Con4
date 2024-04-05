@@ -25,6 +25,6 @@ export interface MatchEntry {
   green_id: string | null;
   move_number: number;
   made_move: Player;
-  board: string; // Stored in database as JSON, so here it will be string.
   current_player: Player;
+  board: string; // Stored in database as JSON, so here it will be string.
 }
