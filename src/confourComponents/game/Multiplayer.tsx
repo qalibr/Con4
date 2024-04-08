@@ -50,7 +50,7 @@ const Multiplayer = () => {
   const [currentPlayer, setCurrentPlayer] = useState<Player>("red"); // red/green player
   const [matchStatus, setMatchStatus] = useState<boolean>(false); // True = both players are ready
   const [matchConcluded, setMatchConcluded] = useState<boolean>(false); // Render finished game and allow for cleanup
-  const [board, setBoard] = useState<TokenBoard>(generateEmptyBoard());
+  const [board, setBoard] = useState<TokenBoard | null>(generateEmptyBoard());
 
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  Useful state variables to control the flow of the app... */
@@ -120,15 +120,15 @@ const Multiplayer = () => {
           //   setLoading(false);
           // }
 
-          console.log(
-            "Debug before enterMatch: ",
-            "\n matchFound: ",
-            matchFound,
-            "\n redReady: ",
-            redReady,
-            "\n greenReady: ",
-            greenReady,
-          );
+          // console.log(
+          //   "Debug before enterMatch: ",
+          //   "\n matchFound: ",
+          //   matchFound,
+          //   "\n redReady: ",
+          //   redReady,
+          //   "\n greenReady: ",
+          //   greenReady,
+          // );
           if (matchFound && redReady && greenReady) {
             await enterMatch(matchId, redId, greenId);
           }
@@ -152,7 +152,7 @@ const Multiplayer = () => {
           setIsQueued(false);
           setMatchFound(false);
         }
-        console.log("- - - - - - - - - - - - - - - - -");
+        // debugState("----"- - - - - - - - - - - - - - - - -");
       } catch (error) {
         console.error("Error fetching queue table...");
       } finally {
@@ -181,7 +181,7 @@ const Multiplayer = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "queue" },
         (payload) => {
-          console.log("Queue changed: ", payload);
+          // debugState("----"Queue changed: ", payload);
           fetchingEntries();
           const updateId = payload.new as QueueEntry;
           if (updateId) {
@@ -265,7 +265,7 @@ const Multiplayer = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "matches" },
         (payload) => {
-          console.log("Matches changed", payload);
+          // console.log("Matches changed", payload);
           // console.log("\nPING EXPECTED (3/5)\n");
           fetchingMatchEntries();
           const updateId = payload.new as MatchEntry;
@@ -308,6 +308,7 @@ const Multiplayer = () => {
     // debugState("Start: useEffect(3)");
 
     const gameState = async () => {
+      if (!board) return;
       const currentBoardState = checkBoardState(board);
       let newGameStatus: GameStatus | Player;
 
@@ -339,7 +340,8 @@ const Multiplayer = () => {
   }, [moveNumber]);
 
   const gameEnded = async () => {
-    if (!user || !matchConcluded) return;
+    if (!user || !matchConcluded || moveNumber === 0 || moveNumber === undefined) return;
+    // debugState("---- gameEnded() ----");
 
     try {
       const { data: matchData, error: fetchError } = await supabase
@@ -365,14 +367,19 @@ const Multiplayer = () => {
         current_player: matchData.current_player,
       };
 
+      const { error: deleteError } = await supabase
+        .from("matches")
+        .delete()
+        .match({ match_id: matchId });
+
+      if (deleteError) throw deleteError;
+
       const { error: updateError } = await supabase
         .from("match_history")
         .insert(matchConclusion)
         .eq("match_id", matchId);
 
       if (updateError) throw updateError;
-
-      setMatchStatus(false);
 
       // Reset all states
       setMatchId(null);
@@ -390,11 +397,11 @@ const Multiplayer = () => {
       setMadeMove(null);
       setCurrentPlayer("red");
       setMatchStatus(false);
-      setBoard(generateEmptyBoard());
+      setBoard(null); // Flush board
       setIsQueued(false);
       setLoading(false);
     } catch (error) {
-      console.error("Error while trying up cleanup and end match.", error);
+      console.error("Other player already cleaned up here.");
     }
   };
 
@@ -402,7 +409,7 @@ const Multiplayer = () => {
     if (matchConcluded) {
       const timeoutId = setTimeout(async () => {
         await gameEnded();
-      }, 15000);
+      }, 3000);
 
       return () => clearTimeout(timeoutId);
     }
@@ -412,38 +419,40 @@ const Multiplayer = () => {
     if (!user) return;
 
     // prettier-ignore
-    // console.log(
-    //                 "Debug info :", where, "\n",
-    //                 "\nentryId: ", entryId, " (id of row in db)",
-    //                 "\nmatchId: ", matchId,
-    //                 "\nredId: ", redId,
-    //                 "\ngreenId: ", greenId,
-    //                 "\nredReady", redReady,
-    //                 "\ngreenReady: ", greenReady,
-    //                 "\ncurrentPlayer: ", currentPlayer,
-    //                 "\nYouAreRed?: ", user.id === redId,
-    //                 "\nYouAreGreen?: ", user.id === greenId,
-    //                 "\nmadeMove: ", madeMove,
-    //                 "\nmoveNumber: ", moveNumber,
-    //                 "\nisQueued: ", isQueued,
-    //                 "\nqueueCount", queueCount,
-    //                 "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-    //                 "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-    //                 "\ngameStatus: ", gameStatus, " (state of the game)",
-    //                 "\nloading: ", loading,
-    //                 "\nboard: ", board,
-    //                 "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-    //                 "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
-    //             );
+    console.log(
+                    "Debug info :", where, "\n",
+                    // "\nentryId: ", entryId, " (id of row in db)",
+                    // "\nmatchId: ", matchId,
+                    // "\nredId: ", redId,
+                    // "\ngreenId: ", greenId,
+                    // "\nredReady", redReady,
+                    // "\ngreenReady: ", greenReady,
+                    // "\ncurrentPlayer: ", currentPlayer,
+                    // "\nYouAreRed?: ", user.id === redId,
+                    // "\nYouAreGreen?: ", user.id === greenId,
+                    // "\nmadeMove: ", madeMove,
+                    "\nmoveNumber: ", moveNumber,
+                    // "\nisQueued: ", isQueued,
+                    // "\nqueueCount", queueCount,
+                    // "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
+                    // "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
+                    // "\ngameStatus: ", gameStatus, " (state of the game)",
+                    // "\nloading: ", loading,
+                    // "\nboard: ", board,
+                    // "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
+                    // "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
+                    "\nmatchConcluded: ", matchConcluded,
+                );
 
-    console.log("\n\n-- board: ", board, ", ", where);
+    // console.log("\n\n-- board: ", board, ", ", where);
   };
 
   /* ccc
    *  A function to create a new entry in the "queue" table... */
   const createEntry = async () => {
     if (!user) return;
-    console.log("\n---- CreateEntry() ----\n");
+    // console.log("\n---- CreateEntry() ----\n");
+    // debugState("---- createEntry() ----");
 
     // NOTE: Not needed since this is called from handleEnterQueue()
     // console.log(
@@ -492,7 +501,8 @@ const Multiplayer = () => {
    *  Function to join an existing entry in the "queue" table... */
   const joinEntry = async (matchId: string | null) => {
     if (!user || !matchId) return;
-    console.log("\n---- joinEntry() ----\n");
+    // console.log("\n---- joinEntry() ----\n");
+    // debugState("---- joinEntry() ----");
 
     // NOTE: Not needed since this is called from handleEnterQueue()
     // console.log("setLoading, joinEntry, was: ", loading, "will become: (true)");
@@ -535,7 +545,8 @@ const Multiplayer = () => {
    *  Function to join the queue */
   const handleEnterQueue = async () => {
     if (!user) return;
-    console.log("\n---- handleEnterQueue() ----\n");
+    // console.log("\n---- handleEnterQueue() ----\n");
+    // debugState("---- handleEnterQueue() ----");
 
     // console.log(
     //   "setLoading, handleEnterQueue, was: ",
@@ -578,12 +589,15 @@ const Multiplayer = () => {
       //   "will become: (false)",
       // );
       setLoading(false);
+      setMatchConcluded(false);
+      setMatchStatus(false);
     }
   };
 
   const handleLeaveQueue = async () => {
     if (!user || !matchId) return; // Immediately return if user is not aware of any matchId...
-    console.log("\n---- handleLeaveQueue() ----\n");
+    // console.log("\n---- handleLeaveQueue() ----\n");
+    // debugState("---- handleLeaveQueue() ----");
 
     // console.log(
     //   "setLoading, handleLeaveQueue, was: ",
@@ -667,7 +681,8 @@ const Multiplayer = () => {
    *  Function to mark players are ready... */
   const acceptPlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId || !user) return;
-    console.log("\n---- acceptPlayerReady() ----\n");
+    // console.log("\n---- acceptPlayerReady() ----\n");
+    // debugState("---- acceptPlayerReady() ----");
 
     // console.log(
     //   "setLoading, acceptPlayerReady, was: ",
@@ -723,7 +738,8 @@ const Multiplayer = () => {
    *  2. Notify the other user that the match was declined */
   const declinePlayerReady = async (matchId: string, playerId: string) => {
     if (!matchId || !playerId) return;
-    console.log("\n---- declinePlayerReady() ----\n");
+    // console.log("\n---- declinePlayerReady() ----\n");
+    // debugState("---- declinePlayerReady() ----");
 
     // console.log(
     //   "setLoading, declinePlayerReady, was: ",
@@ -772,7 +788,8 @@ const Multiplayer = () => {
     redId: string | null,
     greenId: string | null,
   ) => {
-    console.log("\n---- enterMatch() ----\n");
+    // console.log("\n---- enterMatch() ----\n");
+    // debugState("---- enterMatch() ----");
 
     // console.log(
     //   "Debug after enterMatch: ",
@@ -797,7 +814,9 @@ const Multiplayer = () => {
     try {
       // Converting to JSON format before inserting, this way we can maintain the array format we need
       // when we retrieve the record later by parsing it.
-      const jsonBoard = JSON.stringify(board);
+      const newBoard = generateEmptyBoard();
+      setBoard(newBoard);
+      const jsonBoard = JSON.stringify(newBoard);
 
       const matchEntry: MatchEntry = {
         id: entryId,
@@ -865,7 +884,8 @@ const Multiplayer = () => {
    *  Handling match state variables when players click the columns... */
   const handleColumnClick = async (colIndex: number) => {
     // debugState("-- handleColumnClick() --");
-    if (!user || !matchId || gameStatus !== "inProgress") return;
+    if (!user || !matchId || gameStatus !== "inProgress" || !board) return;
+    // debugState("---- handleColumnClick() ----");
 
     // Stop player from moving out of turn...
     if (
@@ -905,7 +925,8 @@ const Multiplayer = () => {
     newTurn: Player,
     newMoveNumber: number,
   ) => {
-    console.log("\n---- updateGame() ----\n");
+    // console.log("\n---- updateGame() ----\n");
+    // debugState("---- updateGame() ----");
 
     const jsonBoard = JSON.stringify(newBoard);
 
@@ -930,7 +951,8 @@ const Multiplayer = () => {
 
   const updateGameStatus = async (newGameStatus: GameStatus | Player) => {
     if (!user) return;
-    console.log("\n---- updateGameStatus() ----\n");
+    // console.log("\n---- updateGameStatus() ----\n");
+    // debugState("---- updateGameStatus() ----");
     let newMatchConclusion: boolean = false;
 
     // See if the match is completed or no
@@ -952,6 +974,11 @@ const Multiplayer = () => {
         .eq("match_id", matchId);
 
       if (updateError) throw updateError;
+
+      if (newMatchConclusion) {
+        setMatchConcluded(newMatchConclusion);
+        setGameStatus(newGameStatus);
+      }
     } catch (error) {
       console.error("Error updating 'matches' table: ", error);
     }
@@ -1017,7 +1044,7 @@ const Multiplayer = () => {
           )}
 
           {/* MATCH PLAY AREA*/}
-          {matchStatus && (
+          {matchStatus && board && (
             <div
               style={{
                 display: "flex",
