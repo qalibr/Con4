@@ -415,6 +415,31 @@ const Multiplayer = () => {
     }
   }, [matchConcluded]);
 
+  useEffect(() => {
+    if (!user || !matchId) return;
+
+    let queueTimeout: boolean;
+    if (matchFound && user.id === redId && !redReady) {
+      console.log("Timing out...");
+      queueTimeout = true;
+    } else if (matchFound && user.id === greenId && !greenReady) {
+      console.log("Timing out...");
+      queueTimeout = true;
+    } else {
+      console.log("Not timing out...");
+      queueTimeout = false;
+    }
+
+    if (queueTimeout) {
+      console.log("Started count: ");
+      const queueTimeoutId = setTimeout(async () => {
+        await declinePlayerReady(matchId, user.id);
+      }, 3000);
+
+      return () => clearTimeout(queueTimeoutId);
+    }
+  }, [matchFound]);
+
   const debugState = (where: string = "") => {
     if (!user) return;
 
