@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu.tsx";
 import { SignupCard } from "@/confourComponents/auth/signup-card.tsx";
 import { LoginCard } from "@/confourComponents/auth/login-card.tsx";
+import { ChangeUsername } from "@/confourComponents/auth/change-username.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
@@ -18,6 +19,7 @@ const Login = () => {
   const { user, loading } = useAuth();
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
+  const [showChangeUsername, setShowChangeUsername] = useState<boolean>(false);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -45,6 +47,10 @@ const Login = () => {
     setShowLoginCard(false);
   };
 
+  const handleChangeUsername = () => {
+    setShowChangeUsername(!showChangeUsername);
+  };
+
   return (
     <div>
       {loading ? (
@@ -57,6 +63,10 @@ const Login = () => {
             <Button>User</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleChangeUsername}>
+              Change Username
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
