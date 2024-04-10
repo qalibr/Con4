@@ -19,7 +19,7 @@ const Login = () => {
   const { user, loading } = useAuth();
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
-  const [showChangeUsername, setShowChangeUsername] = useState<boolean>(false);
+  const [showChangeUsername, setShowChangeUsername] = useState(false);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -39,6 +39,11 @@ const Login = () => {
     setShowLoginCard(!showLoginCard);
   };
 
+  const toggleChangeUsername = () => {
+    console.log("Ping.");
+    setShowChangeUsername(!showChangeUsername);
+  };
+
   const handleCancelSignup = () => {
     setShowSignupCard(false);
   };
@@ -47,8 +52,8 @@ const Login = () => {
     setShowLoginCard(false);
   };
 
-  const handleChangeUsername = () => {
-    setShowChangeUsername(!showChangeUsername);
+  const handleCancelChangeUsername = () => {
+    setShowChangeUsername(false);
   };
 
   return (
@@ -63,7 +68,7 @@ const Login = () => {
             <Button>User</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={handleChangeUsername}>
+            <DropdownMenuItem onClick={toggleChangeUsername}>
               Change Username
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -101,6 +106,11 @@ const Login = () => {
             onCancel={handleCancelLogin}
             onLoginSuccess={handleCancelLogin}
           />
+        )}
+      </div>
+      <div className="relative">
+        {showChangeUsername && (
+          <ChangeUsername onChangeSuccess={handleCancelChangeUsername} />
         )}
       </div>
     </div>

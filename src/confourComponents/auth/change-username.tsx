@@ -23,7 +23,11 @@ interface UserEntry {
   username: string;
 }
 
-export function ChangeUsername() {
+interface Props {
+  onChangeSuccess: () => void;
+}
+
+export function ChangeUsername({ onChangeSuccess }: Props): JSX.Element {
   const { user } = useAuth();
   const [newUsername, setNewUsername] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -34,9 +38,10 @@ export function ChangeUsername() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log("Hello");
 
     try {
-      const changeUserInfo = {
+      const changeUserInfo: UserEntry = {
         user_id: user.id,
         created_at: new Date().toISOString(),
         username: newUsername,
@@ -44,12 +49,13 @@ export function ChangeUsername() {
 
       const { error: upsertError } = await supabase
         .from("users")
-        .upsert([changeUserInfo])
+        .upsert(changeUserInfo)
         .select();
 
       if (upsertError) throw upsertError;
 
       console.log("Successfully changed username.");
+      onChangeSuccess();
     } catch (error) {
       console.error("Error while trying to update row.", error);
       setError("Error encountered while trying to update username");
@@ -70,33 +76,28 @@ export function ChangeUsername() {
             Enter your new Username. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
+
+        <form onSubmit={handleChangeUsername}>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input
-              id="name"
-              // defaultValue="Pedro Duarte"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="username" className="text-right">
               Username
             </Label>
             <Input
               id="username"
-              defaultValue="@peduarte"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
               className="col-span-3"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Save changes</Button>
+          <Button type="submit" disabled={loading}>
+            Save changes
+          </Button>
         </DialogFooter>
+        </form>
+
       </DialogContent>
     </Dialog>
   );
