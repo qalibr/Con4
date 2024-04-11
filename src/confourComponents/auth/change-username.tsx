@@ -25,9 +25,12 @@ interface UserEntry {
 
 interface Props {
   onChangeSuccess: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+
 }
 
-export function ChangeUsername({ onChangeSuccess }: Props): JSX.Element {
+export function ChangeUsername({ onChangeSuccess, isOpen, onClose }: Props): JSX.Element {
   const { user } = useAuth();
   const [newUsername, setNewUsername] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -65,10 +68,10 @@ export function ChangeUsername({ onChangeSuccess }: Props): JSX.Element {
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Change Username</Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      {/*<DialogTrigger asChild>*/}
+      {/*  <Button variant="outline">Change Username</Button>*/}
+      {/*</DialogTrigger>*/}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Change Username</DialogTitle>
