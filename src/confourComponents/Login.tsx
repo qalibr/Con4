@@ -20,7 +20,6 @@ const Login = () => {
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
   const [showChangeUsername, setShowChangeUsername] = useState(false);
-  const [isChangeUsernameOpen, setIsChangeUsernameOpen] = useState(false);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -53,7 +52,7 @@ const Login = () => {
   };
 
   const toggleChangeUsername = () => {
-    setIsChangeUsernameOpen(!isChangeUsernameOpen);
+    setShowChangeUsername(!showChangeUsername);
   };
 
   return (
@@ -112,7 +111,7 @@ const Login = () => {
         {showChangeUsername && (
           <ChangeUsername
             onChangeSuccess={handleCancelChangeUsername}
-            isOpen={isChangeUsernameOpen}
+            isOpen={showChangeUsername}
             onClose={handleCancelChangeUsername}
           />
         )}
