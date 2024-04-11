@@ -386,7 +386,9 @@ const Multiplayer = () => {
         .eq("match_id", matchId);
 
       if (updateError) throw updateError;
-
+    } catch (error) {
+      console.error("Other player already cleaned up here.");
+    } finally {
       // Reset all states
       setMatchId(null);
       setEntryId(undefined);
@@ -406,8 +408,6 @@ const Multiplayer = () => {
       setBoard(null); // Flush board
       setIsQueued(false);
       setLoading(false);
-    } catch (error) {
-      console.error("Other player already cleaned up here.");
     }
   };
 
@@ -899,6 +899,7 @@ const Multiplayer = () => {
 
       // setMatchFound(false);
       setMatchEntry(matchEntry);
+      setMoveNumber(0);
     } catch (error) {
       console.error("Error while trying to enter match...", error);
     } finally {
@@ -1062,12 +1063,18 @@ const Multiplayer = () => {
           <div className="lds-dual-ring mb-2"></div>
         ) : (
           <div>
+            {/* Spinner while waiting for other player to accept */}
+            {user && user.id === redId && redReady && (
+              <div className="lds-dual-ring mb-2"></div>
+            )}
+
+            {/*Queue up*/}
             {!isQueued && !matchStatus && (
               <Button onClick={handleEnterQueue} className="mb-2">
                 Join Queue
               </Button>
             )}
-            
+
             {/*{isQueued && !matchFound && (*/}
             {/*  <p className="mb-2">*/}
             {/*    You are currently in the queue. Please wait for your match to*/}
@@ -1075,10 +1082,7 @@ const Multiplayer = () => {
             {/*  </p>*/}
             {/*)}*/}
 
-            {user && user.id === redId && redReady && (
-              <div className="lds-dual-ring mb-2"></div>
-            )}
-
+            {/* Accept/Decline */}
             {user && matchFound && !redReady && (
               <div className="flex flex-col items-center mb-2">
                 <p>Found match!</p>
@@ -1118,6 +1122,22 @@ const Multiplayer = () => {
                 Re-queue
               </Button>
             )}
+
+            <div>
+              <ul className="flex-auto items-center">
+                <li style={{ marginTop: "0px" }}>
+                  {gameStatus !== "inProgress" && matchId && (
+                    <Alert>
+                      Game Over:{" "}
+                      {gameStatus === "draw"
+                        ? "Draw"
+                        : `Winner is ${gameStatus}`}
+                    </Alert>
+                  )}
+                </li>
+                <li>{matchId && <p>Move Number: {moveNumber}</p>}</li>
+              </ul>
+            </div>
           </div>
         )}
       </div>
