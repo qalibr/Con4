@@ -60,6 +60,9 @@ const Multiplayer = () => {
   // Improve user experience with loading spinner
   const [loading, setLoading] = useState<boolean>(false);
 
+  // Other
+  const [countdown, setCountdown] = useState<number>(0);
+
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
    *  Update user state variables for conditional rendering... */
@@ -411,18 +414,43 @@ const Multiplayer = () => {
     }
   };
 
+  /*
+   * Timeout the match upon conclusion and return players to start */
   useEffect(() => {
     if (matchConcluded) {
-      const timeoutId = setTimeout(async () => {
-        await gameEnded();
-      }, 15000);
+      let intervalId: string | number | NodeJS.Timeout | undefined;
+      const postMatchTimer = 15;
+      setCountdown(postMatchTimer);
 
-      return () => clearTimeout(timeoutId);
+      // eslint-disable-next-line prefer-const
+      intervalId = setInterval(() => {
+        setCountdown((currentCountdown) => {
+          if (currentCountdown <= 1) {
+            gameEnded().catch(console.error);
+            clearInterval(intervalId);
+            return 0;
+          }
+
+          return currentCountdown - 1;
+        });
+      }, 1000);
+
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
     }
   }, [matchConcluded]);
 
+  /*
+   * Timeout if a both users don't accept within a certain threshold */
   useEffect(() => {
     if (!user || !matchId) return;
+
+    let intervalId: string | number | NodeJS.Timeout | undefined;
+    const acceptanceTime: number = 15;
+    setCountdown(acceptanceTime);
 
     let queueTimeout: boolean;
     if (matchFound && user.id === redId && !redReady) {
@@ -438,13 +466,26 @@ const Multiplayer = () => {
 
     if (queueTimeout) {
       console.log("Started count: ");
-      const queueTimeoutId = setTimeout(async () => {
-        await declinePlayerReady(matchId, user.id);
-      }, 15000);
 
-      return () => clearTimeout(queueTimeoutId);
+      intervalId = setInterval(() => {
+        setCountdown((currentCountdown) => {
+          if (currentCountdown <= 1) {
+            declinePlayerReady(matchId, user.id).catch(console.error);
+            clearInterval(intervalId);
+            return 0;
+          }
+
+          return currentCountdown - 1;
+        });
+      }, 1000);
     }
-  }, [matchFound]);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [matchFound, redReady, greenReady]);
 
   const debugState = (where: string = "") => {
     if (!user) return;
@@ -1085,7 +1126,7 @@ const Multiplayer = () => {
             {/* Accept/Decline */}
             {user && matchFound && !redReady && (
               <div className="flex flex-col items-center mb-2">
-                <p>Found match!</p>
+                <p>Found match! {countdown}</p>
                 <Button
                   onClick={() =>
                     matchId && user && acceptPlayerReady(matchId, user.id)
