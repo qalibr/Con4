@@ -340,7 +340,13 @@ const Multiplayer = () => {
   }, [moveNumber]);
 
   const gameEnded = async () => {
-    if (!user || !matchConcluded || moveNumber === 0 || moveNumber === undefined) return;
+    if (
+      !user ||
+      !matchConcluded ||
+      moveNumber === 0 ||
+      moveNumber === undefined
+    )
+      return;
     // debugState("---- gameEnded() ----");
 
     try {
@@ -1014,116 +1020,103 @@ const Multiplayer = () => {
       {loading ? (
         <div className="lds-dual-ring"></div>
       ) : (
-        <div className="transform -translate-y-44">
-          {/*<h2>Queue Status</h2>*/}
-          {!isQueued && !matchStatus && (
-            <Button onClick={handleEnterQueue} className="m-4">
-              Join Queue
-            </Button>
-          )}
-
-          {isQueued && !matchFound && (
-            <p className="m-4">
-              You are currently in the queue. Please wait for your match to
-              start.
-            </p>
-          )}
-
-          {user && user.id === redId && redReady && (
-            <div className="lds-dual-ring"></div>
-          )}
-
-          {user &&
-            matchFound &&
-            ((user.id === redId && !redReady) ||
-              (user.id === greenId && !greenReady)) && (
-              <div>
-                <p>Found match!</p>
-
-                <Button
-                  onClick={() =>
-                    matchId && user && acceptPlayerReady(matchId, user.id)
-                  }
-                  className="m-4"
-                >
-                  Accept
-                </Button>
-                <Button
-                  onClick={() =>
-                    matchId && user && declinePlayerReady(matchId, user.id)
-                  }
-                  className="m-4"
-                >
-                  Decline
-                </Button>
-              </div>
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center mb-4">
+            {/*<h2>Queue Status</h2>*/}
+            {!isQueued && !matchStatus && (
+              <Button onClick={handleEnterQueue} className="mb-2">
+                Join Queue
+              </Button>
             )}
 
-          {matchStatus && <p>You are currently in a match.</p>}
+            {isQueued && !matchFound && (
+              <p className="mb-2">
+                You are currently in the queue. Please wait for your match to
+                start.
+              </p>
+            )}
 
-          {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
-          {isQueued && !matchFound && (
-            <Button onClick={handleLeaveQueue} className="m-4">
-              Leave Queue
-            </Button>
-          )}
+            {user && user.id === redId && redReady && (
+              <div className="lds-dual-ring"></div>
+            )}
 
-          {/* MATCH PLAY AREA*/}
-          {matchStatus && board && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "85vh",
-              }}
-              className="transform translate-y-32"
-            >
-              {/* Clickable columns */}
-              <div style={{ display: "flex" }}>
-                {board.map((column, columnIndex) => (
-                  <div
-                    key={columnIndex}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column-reverse",
-                      margin: "5px",
-                    }}
+            {user &&
+              matchFound &&
+              ((user.id === redId && !redReady) ||
+                (user.id === greenId && !greenReady)) && (
+                <div className="flex flex-col items-center mb-2">
+                  <p>Found match!</p>
+
+                  <Button
+                    onClick={() =>
+                      matchId && user && acceptPlayerReady(matchId, user.id)
+                    }
+                    className="mb-1"
                   >
-                    {column.map((cell, rowIndex) => (
-                      <div
-                        key={rowIndex}
-                        onClick={() => handleColumnClick(columnIndex)}
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          border: "1px solid black",
-                          backgroundColor: cell || "white",
-                        }}
-                      ></div>
-                    ))}
-                  </div>
-                ))}
-              </div>
+                    Accept
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      matchId && user && declinePlayerReady(matchId, user.id)
+                    }
+                  >
+                    Decline
+                  </Button>
+                </div>
+              )}
 
-              <div style={{ marginTop: "20px" }}>
-                <ul className="flex-auto items-center">
-                  <li style={{ marginTop: "0px" }}>
-                    {gameStatus !== "inProgress" && matchId && (
-                      <Alert>
-                        Game Over:{" "}
-                        {gameStatus === "draw"
-                          ? "Draw"
-                          : `Winner is ${gameStatus}`}
-                      </Alert>
-                    )}
-                  </li>
-                  <li>{matchId && <p>Move Number: {moveNumber}</p>}</li>
-                </ul>
-              </div>
+            {matchStatus && <p>You are currently in a match.</p>}
+
+            {/* Conditionally render a leave queue button if the user is in the queue but not yet in a match */}
+            {isQueued && !matchFound && (
+              <Button onClick={handleLeaveQueue} className="mb-2">
+                Leave Queue
+              </Button>
+            )}
+
+            <div className="w-full max-w-md">
+              {/* non-interactive columns as placeholders */}
+              {!matchStatus && board && (
+                <div className="flex justify-center">
+                  {board.map((column, columnIndex) => (
+                    <div
+                      key={columnIndex}
+                      className="flex flex-col-reverse m-1"
+                    >
+                      {column.map((cell, rowIndex) => (
+                        <div
+                          key={rowIndex}
+                          className="w-12 h-12 border border-black bg-white"
+                          style={{ backgroundColor: cell || "white" }}
+                        ></div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Interactive columns for active match */}
+              {matchStatus && board && (
+                <div className="flex justify-center">
+                  {board.map((column, columnIndex) => (
+                    <div
+                      key={columnIndex}
+                      className="flex flex-col-reverse m-1"
+                    >
+                      {column.map((cell, rowIndex) => (
+                        <div
+                          key={rowIndex}
+                          className="w-12 h-12 border border-black cursor-pointer"
+                          style={{ backgroundColor: cell || "white" }}
+                          onClick={() => handleColumnClick(columnIndex)}
+                        ></div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Give the player the option of entering queue immediately */}
           {matchStatus && matchConcluded && (
@@ -1131,7 +1124,7 @@ const Multiplayer = () => {
               onClick={() => {
                 gameEnded().then(handleEnterQueue); // Ensure gameEnded completes before re-queueing
               }}
-              className="m-4  transform translate-y-12"
+              className="mt-4"
             >
               Re-queue
             </Button>
