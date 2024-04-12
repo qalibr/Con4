@@ -62,6 +62,7 @@ const Multiplayer = () => {
 
   // Other
   const [countdown, setCountdown] = useState<number>(0);
+  const [nudge, setNudge] = useState<boolean>(false);
 
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
@@ -195,6 +196,13 @@ const Multiplayer = () => {
             setQueueCount(updateId.queue_count);
             setRedReady(updateId.red_ready);
             setGreenReady(updateId.green_ready);
+
+            if (
+              (redReady && greenReady && user.id === redId) ||
+              (redReady && greenReady && user.id === greenId)
+            ) {
+              setMatchStatus(true);
+            }
           }
         },
       )
@@ -301,7 +309,7 @@ const Multiplayer = () => {
     return () => {
       matchChannel.unsubscribe();
     };
-  }, [user, moveNumber]);
+  }, [user, moveNumber, matchStatus]);
 
   /* ccc
    *  GAME STATE
@@ -408,7 +416,7 @@ const Multiplayer = () => {
       setMadeMove(null);
       setCurrentPlayer("red");
       setMatchStatus(false);
-      setBoard(null); // Flush board
+      setBoard(generateEmptyBoard); // Flush board
       setIsQueued(false);
       setLoading(false);
     }
@@ -425,6 +433,14 @@ const Multiplayer = () => {
       // eslint-disable-next-line prefer-const
       intervalId = setInterval(() => {
         setCountdown((currentCountdown) => {
+          if (
+            currentCountdown === 15 ||
+            currentCountdown === 10 ||
+            currentCountdown === 5
+          ) {
+            console.log("Count: ", currentCountdown);
+          }
+
           if (currentCountdown <= 1) {
             gameEnded().catch(console.error);
             clearInterval(intervalId);
@@ -447,6 +463,7 @@ const Multiplayer = () => {
    * Timeout if a both users don't accept within a certain threshold */
   useEffect(() => {
     if (!user || !matchId) return;
+    console.log("rReady, gReady, matchFound: ", redReady, greenReady, matchFound);
 
     let intervalId: string | number | NodeJS.Timeout | undefined;
     const acceptanceTime: number = 15;
@@ -469,6 +486,14 @@ const Multiplayer = () => {
 
       intervalId = setInterval(() => {
         setCountdown((currentCountdown) => {
+          if (
+            currentCountdown === 15 ||
+            currentCountdown === 10 ||
+            currentCountdown === 5
+          ) {
+            console.log("Count: ", currentCountdown);
+          }
+
           if (currentCountdown <= 1) {
             declinePlayerReady(matchId, user.id).catch(console.error);
             clearInterval(intervalId);
@@ -1124,7 +1149,7 @@ const Multiplayer = () => {
             {/*)}*/}
 
             {/* Accept/Decline */}
-            {user && matchFound && !redReady && (
+            {user && matchFound && (!redReady || !greenReady) && (
               <div className="flex flex-col items-center mb-2">
                 <p>Found match! {countdown}</p>
                 <Button
