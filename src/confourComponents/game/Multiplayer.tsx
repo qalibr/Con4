@@ -62,7 +62,6 @@ const Multiplayer = () => {
 
   // Other
   const [countdown, setCountdown] = useState<number>(0);
-  const [nudge, setNudge] = useState<boolean>(false);
 
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
@@ -81,8 +80,8 @@ const Multiplayer = () => {
       setLoading(true); // So we don't keep loading during the actual game...
     }
 
-    if (user.id === redId) console.log("\nYou are red.");
-    if (user.id === greenId) console.log("\nYou are green.");
+    // if (user.id === redId) console.log("\nYou are red.");
+    // if (user.id === greenId) console.log("\nYou are green.");
 
     /*
      * Fetching the entire table... */
@@ -201,8 +200,12 @@ const Multiplayer = () => {
               (redReady && greenReady && user.id === redId) ||
               (redReady && greenReady && user.id === greenId)
             ) {
-              setMatchStatus(true);
+              // console.log("Setting matchStatus true: ", matchStatus);
+              // setMatchStatus(true);
             }
+
+            // console.log("rReady: ", redReady);
+            // console.log("gReady: ", greenReady);
           }
         },
       )
@@ -213,7 +216,7 @@ const Multiplayer = () => {
     return () => {
       queueChannel.unsubscribe();
     };
-  }, [user, isQueued, redReady, greenReady]);
+  }, [user, isQueued, redReady, greenReady, matchId]);
 
   /* ccc
    *  MATCH
@@ -280,25 +283,33 @@ const Multiplayer = () => {
           // console.log("\nPING EXPECTED (3/5)\n");
           fetchingMatchEntries();
           const updateId = payload.new as MatchEntry;
-          if (updateId) {
-            // console.log("\nPING EXPECTED (4/5)\n");
-            setEntryId(updateId.id);
-            setMatchConcluded(updateId.match_concluded);
-            setMatchId(updateId.match_id);
-            setMatchStatus(updateId.match_status);
-            setGameStatus(updateId.game_status);
-            setRedId(updateId.red_id);
-            setGreenId(updateId.green_id);
-            setMoveNumber(updateId.move_number);
-            setMadeMove(updateId.made_move);
-            setCurrentPlayer(updateId.current_player);
+          try {
+            if (updateId) {
+              // console.log("\nPING EXPECTED (4/5)\n");
+              setEntryId(updateId.id);
+              setMatchConcluded(updateId.match_concluded);
+              setMatchId(updateId.match_id);
+              setMatchStatus(updateId.match_status);
+              setGameStatus(updateId.game_status);
+              setRedId(updateId.red_id);
+              setGreenId(updateId.green_id);
+              setMoveNumber(updateId.move_number);
+              setMadeMove(updateId.made_move);
+              setCurrentPlayer(updateId.current_player);
 
-            const parseBoard: TokenBoard = JSON.parse(updateId.board);
-            if (parseBoard) {
-              setBoard(parseBoard);
+              const parseBoard: TokenBoard = JSON.parse(updateId.board);
+
+              if (parseBoard) {
+                setBoard(parseBoard);
+              }
             }
-          } else {
-            // console.log("\nPING UN-EXPECTED (3/3)\n");
+          } catch (error) {
+            console.error(
+              "Error, updateId is null or undefined",
+              updateId,
+              "\n ending game...",
+            );
+            gameEnded().catch(console.error);
           }
         },
       )
@@ -309,7 +320,7 @@ const Multiplayer = () => {
     return () => {
       matchChannel.unsubscribe();
     };
-  }, [user, moveNumber, matchStatus]);
+  }, [user, moveNumber, matchStatus, gameStatus, matchId]);
 
   /* ccc
    *  GAME STATE
@@ -360,6 +371,8 @@ const Multiplayer = () => {
       return;
     // debugState("---- gameEnded() ----");
 
+    console.log("CLEANING!");
+
     try {
       const { data: matchData, error: fetchError } = await supabase
         .from("matches")
@@ -401,6 +414,7 @@ const Multiplayer = () => {
       console.error("Other player already cleaned up here.");
     } finally {
       // Reset all states
+      console.log("Resetting states...\n");
       setMatchId(null);
       setEntryId(undefined);
       setRedId(null);
@@ -422,25 +436,30 @@ const Multiplayer = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (!user) return;
+  //
+  //   if (matchConcluded && gameStatus !== "inProgress" && countdown !== 0) {
+  //     gameEnded().catch(console.error);
+  //   }
+  // }, [matchConcluded]);
+
   /*
    * Timeout the match upon conclusion and return players to start */
   useEffect(() => {
+    if (!user) return;
+
     if (matchConcluded) {
       let intervalId: string | number | NodeJS.Timeout | undefined;
       const postMatchTimer = 15;
       setCountdown(postMatchTimer);
 
+      // debugState("Match concluded effect");
+
+      // console.log("Started count: ");
       // eslint-disable-next-line prefer-const
       intervalId = setInterval(() => {
         setCountdown((currentCountdown) => {
-          if (
-            currentCountdown === 15 ||
-            currentCountdown === 10 ||
-            currentCountdown === 5
-          ) {
-            console.log("Count: ", currentCountdown);
-          }
-
           if (currentCountdown <= 1) {
             gameEnded().catch(console.error);
             clearInterval(intervalId);
@@ -463,7 +482,12 @@ const Multiplayer = () => {
    * Timeout if a both users don't accept within a certain threshold */
   useEffect(() => {
     if (!user || !matchId) return;
-    console.log("rReady, gReady, matchFound: ", redReady, greenReady, matchFound);
+    // console.log(
+    //   "rReady, gReady, matchFound: ",
+    //   redReady,
+    //   greenReady,
+    //   matchFound,
+    // );
 
     let intervalId: string | number | NodeJS.Timeout | undefined;
     const acceptanceTime: number = 15;
@@ -471,18 +495,21 @@ const Multiplayer = () => {
 
     let queueTimeout: boolean;
     if (matchFound && user.id === redId && !redReady) {
-      console.log("Timing out...");
+      // console.log("Timing out...");
       queueTimeout = true;
     } else if (matchFound && user.id === greenId && !greenReady) {
-      console.log("Timing out...");
+      // console.log("Timing out...");
+      queueTimeout = true;
+    } else if (matchFound && (!redReady || !greenReady)) {
+      // console.log("Timing out...");
       queueTimeout = true;
     } else {
-      console.log("Not timing out...");
+      // console.log("Not timing out...");
       queueTimeout = false;
     }
 
     if (queueTimeout) {
-      console.log("Started count: ");
+      // console.log("Started count: ");
 
       intervalId = setInterval(() => {
         setCountdown((currentCountdown) => {
@@ -491,7 +518,7 @@ const Multiplayer = () => {
             currentCountdown === 10 ||
             currentCountdown === 5
           ) {
-            console.log("Count: ", currentCountdown);
+            // console.log("Count: ", currentCountdown);
           }
 
           if (currentCountdown <= 1) {
@@ -519,25 +546,25 @@ const Multiplayer = () => {
     console.log(
                     "Debug info :", where, "\n",
                     // "\nentryId: ", entryId, " (id of row in db)",
-                    // "\nmatchId: ", matchId,
+                    "\nmatchId: ", matchId,
                     // "\nredId: ", redId,
                     // "\ngreenId: ", greenId,
-                    // "\nredReady", redReady,
-                    // "\ngreenReady: ", greenReady,
-                    // "\ncurrentPlayer: ", currentPlayer,
+                    "\nredReady", redReady,
+                    "\ngreenReady: ", greenReady,
+                    "\ncurrentPlayer: ", currentPlayer,
                     // "\nYouAreRed?: ", user.id === redId,
                     // "\nYouAreGreen?: ", user.id === greenId,
                     // "\nmadeMove: ", madeMove,
                     "\nmoveNumber: ", moveNumber,
-                    // "\nisQueued: ", isQueued,
-                    // "\nqueueCount", queueCount,
-                    // "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-                    // "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-                    // "\ngameStatus: ", gameStatus, " (state of the game)",
+                    "\nisQueued: ", isQueued,
+                    "\nqueueCount", queueCount,
+                    "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
+                    "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
+                    "\ngameStatus: ", gameStatus, " (state of the game)",
                     // "\nloading: ", loading,
-                    // "\nboard: ", board,
-                    // "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-                    // "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
+                    "\nboard: ", board,
+                    "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
+                    "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
                     "\nmatchConcluded: ", matchConcluded,
                 );
 
@@ -671,11 +698,11 @@ const Multiplayer = () => {
 
       if (entryToJoin) {
         await joinEntry(entryToJoin.match_id);
-        console.log("Joining entry: ", entryToJoin.match_id);
+        // console.log("Joining entry: ", entryToJoin.match_id);
       } else {
         // If no open entry exists, create a new one...
         await createEntry();
-        console.log("No open entries found, creating new...");
+        // console.log("No open entries found, creating new...");
       }
     } catch (error) {
       console.error("Error while trying to join queue: ", error);
@@ -685,6 +712,11 @@ const Multiplayer = () => {
       //   loading,
       //   "will become: (false)",
       // );
+
+      // if (matchConcluded && gameStatus !== "inProgress" && countdown !== 0) {
+      //
+      // }
+
       setLoading(false);
       setMatchConcluded(false);
       setMatchStatus(false);
@@ -730,7 +762,7 @@ const Multiplayer = () => {
           return;
         }
 
-        console.log("Queue entry deleted successfully...");
+        // console.log("Queue entry deleted successfully...");
       } else {
         let updatePayload = {};
 
@@ -757,7 +789,7 @@ const Multiplayer = () => {
           console.error("Error updating queue entry: ", updateError);
         }
 
-        console.log("Queue entry updated successfully...");
+        // console.log("Queue entry updated successfully...");
       }
 
       setIsQueued(false);
@@ -810,7 +842,7 @@ const Multiplayer = () => {
 
       if (updateError) throw updateError;
 
-      console.log("Player marked as ready");
+      // console.log("Player marked as ready");
 
       // Save state
       if (playerId === redId) setRedReady(true);
@@ -861,7 +893,7 @@ const Multiplayer = () => {
 
       if (deleteError) throw deleteError;
 
-      console.log("Player declined, deleted the entry...");
+      // console.log("Player declined, deleted the entry...");
       // setMatchStatus(false); // This is not needed, as the match status will not be true before both players are ready
       setIsQueued(false);
       setMatchFound(false);
@@ -906,7 +938,7 @@ const Multiplayer = () => {
     //   "will become: (true)",
     // );
     setLoading(true);
-    console.log("From enterMatch, matchStatus: ", matchStatus);
+    // console.log("From enterMatch, matchStatus: ", matchStatus);
 
     try {
       // Converting to JSON format before inserting, this way we can maintain the array format we need
@@ -945,7 +977,7 @@ const Multiplayer = () => {
           );
           return;
         } else {
-          console.log("Matches entry successfully inserted... ", insertData);
+          // console.log("Matches entry successfully inserted... ", insertData);
         }
 
         // Perform the deletion...
@@ -959,12 +991,13 @@ const Multiplayer = () => {
           return;
         } else {
           setCurrentQueueEntry([]); // Purge the QueueEntry after deletions so data doesn't hang around...
-          console.log("Queue entry successfully deleted...");
+          // console.log("Queue entry successfully deleted...");
         }
       }
 
       // setMatchFound(false);
       setMatchEntry(matchEntry);
+      setMatchStatus(true);
       setMoveNumber(0);
     } catch (error) {
       console.error("Error while trying to enter match...", error);
@@ -990,7 +1023,7 @@ const Multiplayer = () => {
       (currentPlayer === "red" && user.id !== redId) ||
       (currentPlayer === "green" && user.id !== greenId)
     ) {
-      console.log("Wait for opponent to make a move...");
+      // console.log("Wait for opponent to make a move...");
       return;
     }
 
@@ -1041,7 +1074,7 @@ const Multiplayer = () => {
 
       if (updateError) throw updateError;
 
-      console.log("Successfully updated matches table...");
+      // console.log("Successfully updated matches table...");
     } catch (error) {
       console.error("Error updating 'matches' table: ", error);
     }
@@ -1130,7 +1163,7 @@ const Multiplayer = () => {
         ) : (
           <div>
             {/* Spinner while waiting for other player to accept */}
-            {user && user.id === redId && redReady && (
+            {user && user.id === redId && redReady && matchFound && (
               <div className="lds-dual-ring mb-2"></div>
             )}
 
@@ -1201,7 +1234,9 @@ const Multiplayer = () => {
                     </Alert>
                   )}
                 </li>
-                <li>{matchId && <p>Move Number: {moveNumber}</p>}</li>
+                <li>
+                  {matchId && matchStatus && <p>Move Number: {moveNumber}</p>}
+                </li>
               </ul>
             </div>
           </div>

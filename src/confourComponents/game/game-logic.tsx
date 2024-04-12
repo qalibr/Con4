@@ -16,14 +16,14 @@ export function generateEmptyBoard(): TokenBoard {
 // Token represents current player's color
 export function checkBoardState(board: TokenBoard): GameStatus | Player {
   if (!board) {
-    console.log("|| Board is: ", board, "... Returning null...");
+    // console.log("|| Board is: ", board, "... Returning null...");
     return null;
   }
   // Check for horizontal win
   for (let x = 0; x < 4; x++) {
     for (let y = 0; y < 6; y++) {
       const token = board[x][y];
-      // console.log(token);
+      // // console.log(token);
       if (token === null) continue;
       if (
         token === board[x + 1][y] &&
@@ -39,7 +39,7 @@ export function checkBoardState(board: TokenBoard): GameStatus | Player {
   for (let x = 0; x < 7; x++) {
     for (let y = 0; y < 3; y++) {
       const token = board[x][y];
-      // console.log(token);
+      // // console.log(token);
       if (token === null) continue;
       if (
         token === board[x][y + 1] &&
@@ -55,7 +55,7 @@ export function checkBoardState(board: TokenBoard): GameStatus | Player {
   for (let x = 0; x < 4; x++) {
     for (let y = 0; y < 3; y++) {
       const token = board[x][y];
-      // console.log(token);
+      // // console.log(token);
       if (token === null) continue;
       if (
         token === board[x + 1][y + 1] &&
@@ -71,7 +71,7 @@ export function checkBoardState(board: TokenBoard): GameStatus | Player {
   for (let x = 0; x < 4; x++) {
     for (let y = 3; y < 6; y++) {
       const token = board[x][y];
-      // console.log(token);
+      // // console.log(token);
       if (token === null) continue;
       if (
         token === board[x + 1][y - 1] &&
@@ -84,16 +84,16 @@ export function checkBoardState(board: TokenBoard): GameStatus | Player {
   }
 
   if (board.every((column) => column.every((cell) => cell !== null))) {
-    console.log("|| Returned draw...");
+    // console.log("|| Returned draw...");
     return "draw";
   }
 
   // Check if game is in progress
   if (!board.every((column) => column.every((cell) => cell !== null))) {
-    console.log("|| Returned inProgress...");
+    // console.log("|| Returned inProgress...");
     return "inProgress";
   }
 
-  console.log("|| All checks failed, returning null");
+  // console.log("|| All checks failed, returning null");
   return null;
 }
