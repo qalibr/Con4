@@ -915,9 +915,9 @@ const Multiplayer = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="flex flex-col items-center justify-center">
       {/* Make sure the board is always visible on the page and is in a static position */}
-      <div className="w-full max-w-md mb-4">
+      <div className="w-full max-w-md mb-2">
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
           <div className="flex justify-center">

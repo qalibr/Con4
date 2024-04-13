@@ -113,7 +113,6 @@ export const Hamburger = () => {
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuSeparator />
         </DropdownMenuContent>
       </DropdownMenu>
       <div className="relative">

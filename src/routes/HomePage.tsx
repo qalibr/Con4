@@ -6,17 +6,20 @@ import { ModeToggle } from "@/components/mode-toggle.tsx";
 function HomePage() {
   const { user } = useAuth();
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4">
+    <div className="flex flex-col overflow-hidden">
+      <div className="px-4 pt-4 flex-none">
         {/* Hamburger menu for login and other stuff */}
-        <Hamburger />
+        <ul className="flex items-center">
+          <li className="m-2">
+            <Hamburger />
+          </li>
+          <li className="m-2">
+            <ModeToggle />
+          </li>
+        </ul>
       </div>
       <div className="flex-grow flex items-center justify-center">
         {user ? <Multiplayer /> : <p>Login for multiplayer</p>}
-      </div>
-      <div className="p-4 self-start mt-auto">
-        {/* Light/Dark mode */}
-        <ModeToggle />
       </div>
     </div>
   );
