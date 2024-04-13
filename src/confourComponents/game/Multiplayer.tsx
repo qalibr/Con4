@@ -62,7 +62,8 @@ const Multiplayer = () => {
 
   // Countdown variable to notify users of when they would be thrown out of a match.
   const [countdown, setCountdown] = useState<number>(0);
-
+  const moveTimeLimit = 30;
+  const [moveTimer, setMoveTimer] = useState<number>(moveTimeLimit);
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
    *  Update user state variables for conditional rendering... */
@@ -448,6 +449,34 @@ const Multiplayer = () => {
   }, [matchFound, redReady, greenReady]);
 
   /* ccc
+   *  This effect will timeout a player if they don't move within the required time, and they will forfeit. */
+  useEffect(() => {
+    if (!user) return;
+
+    let timerId: string | number | NodeJS.Timeout | undefined;
+
+    if (currentPlayer === (user.id === redId ? "red" : "green") && matchStatus) {
+      timerId = setInterval(() => {
+        setMoveTimer(prevTimer => {
+          if (prevTimer === 1) {
+            // Time's up, current player failed to make a move
+            const winningPlayer = currentPlayer === "red" ? "green" : "red";
+            updateGameStatus(winningPlayer).catch(console.error);
+            clearInterval(timerId);
+            return 0;
+          }
+          return prevTimer - 1;
+        });
+      }, 1000); // Decrease timer every second
+    }
+
+    return () => {
+      clearInterval(timerId);
+      setMoveTimer(moveTimeLimit);  // Reset timer when the effect cleans up
+    };
+  }, [currentPlayer, matchStatus]);
+
+  /* ccc
    *  A function to create a new entry in the "queue" table... */
   const createEntry = async () => {
     if (!user) return;
@@ -787,6 +816,7 @@ const Multiplayer = () => {
     const newMoveNumber = moveNumber + 1;
 
     setBoard(newBoard);
+    setMoveTimer(moveTimeLimit);
     setCurrentPlayer(newTurn);
     setMoveNumber(newMoveNumber);
 
@@ -972,7 +1002,7 @@ const Multiplayer = () => {
               </div>
             )}
 
-            {matchStatus && (
+            {matchStatus && !matchConcluded && (
               <p className="mb-2">You are currently in a match.</p>
             )}
 
@@ -1000,11 +1030,19 @@ const Multiplayer = () => {
                       {gameStatus === "draw"
                         ? "Draw"
                         : `Winner is ${gameStatus}`}
+                      {" ... "} Exit: {countdown}
                     </Alert>
                   )}
                 </li>
                 <li>
-                  {matchId && matchStatus && <p>Move Number: {moveNumber}</p>}
+                  {matchId && matchStatus && !matchConcluded && (
+                    <p>Move Number: {moveNumber}</p>
+                  )}
+                </li>
+                <li>
+                  {matchId && matchStatus && gameStatus === "inProgress" && (
+                    <p>Time Limit: {moveTimer}</p>
+                  )}
                 </li>
               </ul>
             </div>
