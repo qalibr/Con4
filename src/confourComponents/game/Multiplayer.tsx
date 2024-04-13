@@ -3,6 +3,7 @@ import supabase from "@/supabaseClient.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button.tsx";
+import { Progress } from "@/components/ui/progress"
 
 import {
   TokenBoard,
@@ -62,7 +63,7 @@ const Multiplayer = () => {
 
   // Countdown variable to notify users of when they would be thrown out of a match.
   const [countdown, setCountdown] = useState<number>(0);
-  const moveTimeLimit = 30;
+  const moveTimeLimit = 5;
   const [moveTimer, setMoveTimer] = useState<number>(moveTimeLimit);
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
