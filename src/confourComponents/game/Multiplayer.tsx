@@ -1007,7 +1007,7 @@ const Multiplayer = () => {
             )}
 
             {isQueued && !matchFound && (
-              <Button onClick={handleLeaveQueue} className="mb-2">
+              <Button variant="destructive" onClick={handleLeaveQueue} className="mb-2">
                 Leave Queue
               </Button>
             )}
