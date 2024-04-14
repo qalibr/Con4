@@ -914,6 +914,8 @@ const Multiplayer = () => {
     // console.log("\n\n-- board: ", board, ", ", where);
   };
 
+  // https://youtu.be/CUxH_rWSI1k?t=3273
+
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Make sure the board is always visible on the page and is in a static position */}
