@@ -950,16 +950,16 @@ const Multiplayer = () => {
       <div className="w-full max-w-md mb-2">
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
-          <div className="board flex justify-center">
+          <div className="c4-board flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className={`column-container`}>
+              <div key={columnIndex} className={`c4-column-container`}>
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
-                    className={`cell cell-${cell || "empty"} ${
+                    className={`c4-cell c4-cell-${cell || "empty"} ${
                         lastModifiedCell.columnNumber === columnIndex &&
                         lastModifiedCell.rowNumber === rowIndex
-                            ? "coin-drop-animation"
+                            ? "c4-coin-drop-animation"
                             : ""
                     }`}
                   ></div>
@@ -971,11 +971,11 @@ const Multiplayer = () => {
 
         {/* Interactive columns for active match */}
         {matchStatus && board && (
-          <div className="board flex justify-center">
+          <div className="c4-board flex justify-center">
             {board.map((column, columnIndex) => (
               <div
                 key={columnIndex}
-                className={`column-container`}
+                className={`c4-column-container`}
                 onClick={() => {
                   console.log("L");
                 }}
@@ -984,11 +984,11 @@ const Multiplayer = () => {
                   <div
                     key={rowIndex}
                     onClick={(e) => handleColumnClick(columnIndex, e)}
-                    className={`cell cell-${cell || "empty"} ${
-                      lastModifiedCell.columnNumber === columnIndex &&
-                      lastModifiedCell.rowNumber === rowIndex
-                        ? "coin-drop-animation"
-                        : ""
+                    className={`c4-cell c4-cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                            ? "c4-coin-drop-animation"
+                            : ""
                     }`}
                   ></div>
                 ))}

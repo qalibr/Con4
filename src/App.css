@@ -81,14 +81,14 @@
 /* https://youtu.be/CUxH_rWSI1k?t=3273 */
 /* https://animate.style/ */
 /* BOARD STYLING */
-.board {
+.c4-board {
     background-color: slategray;
     padding: 1rem;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.cell {
+.c4-cell {
     width: 3rem;
     height: 3rem;
     cursor: pointer;
@@ -97,14 +97,14 @@
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.column-container {
+.c4-column-container {
     display: flex;
     flex-direction: column-reverse;
     margin: 0.1rem;
     gap: 0.15rem;
 }
 
-.coin-drop-animation {
+.c4-coin-drop-animation {
     animation-name: coin_drop;
     animation-duration: 0.75s;
     animation-timing-function: ease;
@@ -112,20 +112,20 @@
 }
 
 
-.cell-red {
+.c4-cell-red {
     background-color: firebrick;
 }
 
-.cell-green {
+.c4-cell-green {
     background-color: mediumseagreen;
 }
 
-.cell-yellow {
+.c4-cell-yellow {
     background-color: sandybrown;
 }
 
-.cell-empty {
-    background-color: white;
+.c4-cell-empty {
+    background-color: snow;
 }
 
 @keyframes coin_drop {
