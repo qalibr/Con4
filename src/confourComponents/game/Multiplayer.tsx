@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
+import "animate.css";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button.tsx";
@@ -455,9 +456,12 @@ const Multiplayer = () => {
 
     let timerId: string | number | NodeJS.Timeout | undefined;
 
-    if (currentPlayer === (user.id === redId ? "red" : "green") && matchStatus) {
+    if (
+      currentPlayer === (user.id === redId ? "red" : "green") &&
+      matchStatus
+    ) {
       timerId = setInterval(() => {
-        setMoveTimer(prevTimer => {
+        setMoveTimer((prevTimer) => {
           if (prevTimer === 1) {
             // Time's up, current player failed to make a move
             const winningPlayer = currentPlayer === "red" ? "green" : "red";
@@ -472,7 +476,7 @@ const Multiplayer = () => {
 
     return () => {
       clearInterval(timerId);
-      setMoveTimer(moveTimeLimit);  // Reset timer when the effect cleans up
+      setMoveTimer(moveTimeLimit); // Reset timer when the effect cleans up
     };
   }, [currentPlayer, matchStatus]);
 
@@ -887,34 +891,32 @@ const Multiplayer = () => {
 
     // prettier-ignore
     console.log(
-                    "Debug info :", where, "\n",
-                    // "\nentryId: ", entryId, " (id of row in db)",
-                    "\nmatchId: ", matchId,
-                    // "\nredId: ", redId,
-                    // "\ngreenId: ", greenId,
-                    "\nredReady", redReady,
-                    "\ngreenReady: ", greenReady,
-                    "\ncurrentPlayer: ", currentPlayer,
-                    // "\nYouAreRed?: ", user.id === redId,
-                    // "\nYouAreGreen?: ", user.id === greenId,
-                    // "\nmadeMove: ", madeMove,
-                    "\nmoveNumber: ", moveNumber,
-                    "\nisQueued: ", isQueued,
-                    "\nqueueCount", queueCount,
-                    "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-                    "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-                    "\ngameStatus: ", gameStatus, " (state of the game)",
-                    // "\nloading: ", loading,
-                    "\nboard: ", board,
-                    "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-                    "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
-                    "\nmatchConcluded: ", matchConcluded,
-                );
+            "Debug info :", where, "\n",
+            // "\nentryId: ", entryId, " (id of row in db)",
+            "\nmatchId: ", matchId,
+            // "\nredId: ", redId,
+            // "\ngreenId: ", greenId,
+            "\nredReady", redReady,
+            "\ngreenReady: ", greenReady,
+            "\ncurrentPlayer: ", currentPlayer,
+            // "\nYouAreRed?: ", user.id === redId,
+            // "\nYouAreGreen?: ", user.id === greenId,
+            // "\nmadeMove: ", madeMove,
+            "\nmoveNumber: ", moveNumber,
+            "\nisQueued: ", isQueued,
+            "\nqueueCount", queueCount,
+            "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
+            "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
+            "\ngameStatus: ", gameStatus, " (state of the game)",
+            // "\nloading: ", loading,
+            "\nboard: ", board,
+            "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
+            "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
+            "\nmatchConcluded: ", matchConcluded,
+        );
 
     // console.log("\n\n-- board: ", board, ", ", where);
   };
-
-  // https://youtu.be/CUxH_rWSI1k?t=3273
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -946,7 +948,7 @@ const Multiplayer = () => {
                   <div
                     key={rowIndex}
                     onClick={() => handleColumnClick(columnIndex)}
-                    className="w-12 h-12 border border-black cursor-pointer"
+                    className="w-12 h-12 border border-black cursor-pointer animate__animated coin-drop-animation"
                     style={{ backgroundColor: cell || "white" }}
                   ></div>
                 ))}
@@ -1009,7 +1011,11 @@ const Multiplayer = () => {
             )}
 
             {isQueued && !matchFound && (
-              <Button variant="destructive" onClick={handleLeaveQueue} className="mb-2">
+              <Button
+                variant="destructive"
+                onClick={handleLeaveQueue}
+                className="mb-2"
+              >
                 Leave Queue
               </Button>
             )}
