@@ -2,6 +2,11 @@
 
 This is a connect four game web app using React (Vite) and Capacitor for porting to native platforms.
 
+## Acknowledgement
+
+The game rendering and logic has been taken from [this project](https://github.com/miro-jelaska/connect-four)
+made by [Miroslav Jelaska](https://github.com/miro-jelaska), and the MIT license has been included in this project.
+
 ## TL;DR
 
 Command line commands for development:

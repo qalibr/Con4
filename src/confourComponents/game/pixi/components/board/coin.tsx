@@ -1,7 +1,7 @@
-import { RenderableElement } from "@/confourComponents/game/pixi/util/renderables.tsx";
-import { Player_ } from "@/confourComponents/game/pixi/util/player.tsx";
-import { UpdateableElement } from "@/confourComponents/game/pixi/util/updateables.tsx";
 import * as PIXI from "pixi.js";
+import { Player_ } from "@/confourComponents/game/pixi/util/player.tsx";
+import { RenderableElement } from "@/confourComponents/game/pixi/util/renderables.tsx";
+import { UpdateableElement } from "@/confourComponents/game/pixi/util/updateables.tsx";
 
 export class Coin implements RenderableElement, UpdateableElement {
   // Defining constants, coin size, physics.
@@ -12,12 +12,12 @@ export class Coin implements RenderableElement, UpdateableElement {
   public static readonly WINNING_COIN_MAX_ROTATION_SPEED = 0.1;
 
   // x-y coordinates the coin can be placed in.
-  public rowAndColumnIndex: [number, number] | undefined;
+  public rowAndColumnIndex: [number, number];
 
-  private readonly player: Player_ | undefined;
-  private readonly finalPosition: PIXI.Point | undefined;
-  private readonly sprite: PIXI.Sprite | undefined;
-  private readonly stage: PIXI.Container | undefined; // Containers are necessary to manage assets
+  private readonly player: Player_;
+  private readonly finalPosition: PIXI.Point;
+  private readonly sprite: PIXI.Sprite;
+  private readonly stage: PIXI.Container; // Containers are necessary to manage assets
 
   private isAtFinalPosition: boolean = false;
   private isWinningCoin: boolean = false;
@@ -33,9 +33,14 @@ export class Coin implements RenderableElement, UpdateableElement {
     this.rowAndColumnIndex = rowAndColumnIndex;
     this.finalPosition = finalPosition;
 
+    /* ccc
+     *  There is a three step process to using graphics (images (png)) in pixi.js
+     *    1. Load texture
+     *    2. Set texture in a sprite
+     *    3. Stage the sprite in a container. */
     // Loading textures from source.
-    const greenTexture = PIXI.Texture.from("./img/4-count-green.png");
-    const redTexture = PIXI.Texture.from("./img/4-count-red.png");
+    const redTexture = PIXI.Texture.from("./img/coin-red");
+    const greenTexture = PIXI.Texture.from("./img/c4-coin-green.png");
     const texture = player === Player_.Green ? greenTexture : redTexture;
 
     // Set the texture into the sprite of the coin.
@@ -61,8 +66,6 @@ export class Coin implements RenderableElement, UpdateableElement {
   }
 
   private updateRotationOfWinningCoin() {
-    if (this.sprite === undefined) return;
-
     // Increase rotation speed until it reaches maximum speed.
     if (this.rotationSpeed < Coin.WINNING_COIN_MAX_ROTATION_SPEED) {
       this.rotationSpeed += Coin.WINNING_COIN_ROTATION_ACCELERATION;
@@ -74,8 +77,6 @@ export class Coin implements RenderableElement, UpdateableElement {
 
   // Update method that can be called to update the state and position of the coin.
   public update(): void {
-    if (this.sprite === undefined || this.finalPosition === undefined) return;
-
     // Handling rotation depending on if it is a winning coin and if it is in final position.
     if (this.isAtFinalPosition && this.isWinningCoin) {
       this.updateRotationOfWinningCoin();
@@ -93,7 +94,7 @@ export class Coin implements RenderableElement, UpdateableElement {
   }
 
   // Exposing a getter of the stage container.
-  public getStage(): PIXI.Container | undefined {
+  public getStage(): PIXI.Container {
     return this.stage;
   }
 }
