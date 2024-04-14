@@ -12,6 +12,7 @@ import {
   MatchEntry,
   GameStatus,
   Player,
+  LastModifiedCell,
 } from "@/confourComponents/game/types.tsx";
 import {
   checkBoardState,
@@ -65,6 +66,11 @@ const Multiplayer = () => {
   const [countdown, setCountdown] = useState<number>(0);
   const moveTimeLimit = 30;
   const [moveTimer, setMoveTimer] = useState<number>(moveTimeLimit);
+  const [lastModifiedCell, setLastModifiedCell] = useState<LastModifiedCell>({
+    columnNumber: null,
+    rowNumber: null,
+  });
+
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
    *  Update user state variables for conditional rendering... */
@@ -374,6 +380,8 @@ const Multiplayer = () => {
       setBoard(generateEmptyBoard); // Flush board
       setIsQueued(false);
       setLoading(false);
+
+      setLastModifiedCell({ columnNumber: null, rowNumber: null });
     }
   };
 
@@ -793,8 +801,11 @@ const Multiplayer = () => {
    *  Handling match state variables when players click the columns... */
   // eslint-disable-next-line
   const handleColumnClick = async (colIndex: number, event: any) => {
-    if (!user || !matchId || gameStatus !== "inProgress" || !board) return;
-    event.stopPropagation();
+    if (!user || !matchId || gameStatus !== "inProgress" || !board) {
+      event.stopPropagation();
+      console.log("Child");
+      return;
+    }
 
     // Stop player from moving out of turn...
     if (
@@ -806,16 +817,28 @@ const Multiplayer = () => {
 
     const newBoard = [...board];
     let tokenPlaced: boolean = false;
-    for (let i = 0; i <= newBoard[colIndex].length - 1; i++) {
-      if (newBoard[colIndex][i] === null) {
-        newBoard[colIndex][i] = currentPlayer; // Board updated with current players token
+    let placedRow = null;
+
+    for (
+      let rowIndex = 0;
+      rowIndex <= newBoard[colIndex].length - 1;
+      rowIndex++
+    ) {
+      if (newBoard[colIndex][rowIndex] === null) {
+        newBoard[colIndex][rowIndex] = currentPlayer; // Board updated with current players token
         tokenPlaced = true;
+        placedRow = rowIndex;
         break;
       }
     }
 
     if (!tokenPlaced) {
+      event.stopPropagation();
       return; // Column must be full...
+    }
+
+    if (placedRow !== null) {
+      setLastModifiedCell({ columnNumber: colIndex, rowNumber: placedRow });
     }
 
     const newTurn = currentPlayer === "red" ? "green" : "red";
@@ -827,6 +850,7 @@ const Multiplayer = () => {
     setMoveNumber(newMoveNumber);
 
     await updateGame(newBoard, newTurn, newMoveNumber);
+    event.stopPropagation();
   };
 
   const updateGame = async (
@@ -945,13 +969,23 @@ const Multiplayer = () => {
         {matchStatus && board && (
           <div className="flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className={`column-container`}>
+              <div
+                key={columnIndex}
+                className={`column-container`}
+                onClick={() => {
+                  console.log("Parent");
+                }}
+              >
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
                     onClick={(e) => handleColumnClick(columnIndex, e)}
-                    className={`w-12 h-12 border border-black cursor-pointer coin-drop-animation`}
-                    style={{ backgroundColor: cell || "white" }}
+                    className={`cell cell-${cell || "empty"} ${
+                      lastModifiedCell.columnNumber === columnIndex &&
+                      lastModifiedCell.rowNumber === rowIndex
+                        ? "coin-drop-animation"
+                        : ""
+                    }`}
                   ></div>
                 ))}
               </div>

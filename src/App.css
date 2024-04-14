@@ -94,6 +94,25 @@
     animation-fill-mode: forwards;
 }
 
+.cell {
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+.cell-red {
+    background-color: firebrick;
+}
+
+.cell-green {
+    background-color: mediumseagreen;
+}
+
+.cell-empty {
+    background-color: white;
+}
+
 @keyframes coin_drop {
     0% {
         transform: translateY(-100%);
