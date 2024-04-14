@@ -77,9 +77,9 @@ _Requires setup, see below_
     - Developing the User Interface using shadcn/ui
         - An extremely easy to use and beautiful component library.
         - Used for light/dark mode theme switch, used for buttons and menus.
-    - ~~Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
-      library.~~
-    - ~~Tailwind for styling, headless for component logic, and heroicons for graphical elements.~~
+    - Also using Headless UI and Heroicons which are libraries made by the Tailwind CSS team to complement the main
+      library.
+    - Using Animate.style for css animations on the Coins.
 - Capacitor
     - Porting web app to native platforms.
 - Supabase
