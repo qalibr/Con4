@@ -333,7 +333,7 @@ const Multiplayer = () => {
         red_id: matchData.red_id,
         green_id: matchData.green_id,
         move_number: matchData.move_number,
-        made_move: matchData.made_move,
+        made_move: madeMove,
         board: matchData.board,
         current_player: matchData.current_player,
       };
