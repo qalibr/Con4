@@ -64,7 +64,7 @@ const Multiplayer = () => {
 
   // Countdown variable to notify users of when they would be thrown out of a match.
   const [countdown, setCountdown] = useState<number>(0);
-  const moveTimeLimit = 30;
+  const moveTimeLimit = 500;
   const [moveTimer, setMoveTimer] = useState<number>(moveTimeLimit);
   const [lastModifiedCell, setLastModifiedCell] = useState<LastModifiedCell>({
     columnNumber: null,
@@ -950,14 +950,18 @@ const Multiplayer = () => {
       <div className="w-full max-w-md mb-2">
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
-          <div className="flex justify-center">
+          <div className="board flex justify-center">
             {board.map((column, columnIndex) => (
               <div key={columnIndex} className={`column-container`}>
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
-                    className="w-12 h-12 border border-black bg-white"
-                    style={{ backgroundColor: cell || "white" }}
+                    className={`cell cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                            ? "coin-drop-animation"
+                            : ""
+                    }`}
                   ></div>
                 ))}
               </div>
@@ -967,13 +971,13 @@ const Multiplayer = () => {
 
         {/* Interactive columns for active match */}
         {matchStatus && board && (
-          <div className="flex justify-center">
+          <div className="board flex justify-center">
             {board.map((column, columnIndex) => (
               <div
                 key={columnIndex}
                 className={`column-container`}
                 onClick={() => {
-                  console.log("Parent");
+                  console.log("L");
                 }}
               >
                 {column.map((cell, rowIndex) => (

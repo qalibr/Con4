@@ -81,25 +81,36 @@
 /* https://youtu.be/CUxH_rWSI1k?t=3273 */
 /* https://animate.style/ */
 /* BOARD STYLING */
-.column-container {
-    display: flex;
-    flex-direction: column-reverse;
-    margin: 0.05rem;
-}
-
-.coin-drop-animation {
-    animation-name: coin_drop;
-    animation-duration: 1s;
-    animation-timing-function: ease;
-    animation-fill-mode: forwards;
+.board {
+    background-color: slategray;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .cell {
     width: 3rem;
     height: 3rem;
-    border: 1px solid black;
     cursor: pointer;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+
+.column-container {
+    display: flex;
+    flex-direction: column-reverse;
+    margin: 0.1rem;
+    gap: 0.15rem;
+}
+
+.coin-drop-animation {
+    animation-name: coin_drop;
+    animation-duration: 0.75s;
+    animation-timing-function: ease;
+    animation-fill-mode: forwards;
+}
+
 
 .cell-red {
     background-color: firebrick;
@@ -107,6 +118,10 @@
 
 .cell-green {
     background-color: mediumseagreen;
+}
+
+.cell-yellow {
+    background-color: sandybrown;
 }
 
 .cell-empty {
