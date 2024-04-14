@@ -791,8 +791,10 @@ const Multiplayer = () => {
 
   /* ccc
    *  Handling match state variables when players click the columns... */
-  const handleColumnClick = async (colIndex: number) => {
+  // eslint-disable-next-line
+  const handleColumnClick = async (colIndex: number, event: any) => {
     if (!user || !matchId || gameStatus !== "inProgress" || !board) return;
+    event.stopPropagation();
 
     // Stop player from moving out of turn...
     if (
@@ -926,7 +928,7 @@ const Multiplayer = () => {
         {!matchStatus && board && (
           <div className="flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col-reverse m-1">
+              <div key={columnIndex} className={`column-container`}>
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
@@ -943,12 +945,12 @@ const Multiplayer = () => {
         {matchStatus && board && (
           <div className="flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col-reverse m-1">
+              <div key={columnIndex} className={`column-container`}>
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
-                    onClick={() => handleColumnClick(columnIndex)}
-                    className="w-12 h-12 border border-black cursor-pointer animate__animated coin-drop-animation"
+                    onClick={(e) => handleColumnClick(columnIndex, e)}
+                    className={`w-12 h-12 border border-black cursor-pointer coin-drop-animation`}
                     style={{ backgroundColor: cell || "white" }}
                   ></div>
                 ))}

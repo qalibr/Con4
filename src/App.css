@@ -81,7 +81,24 @@
 /* https://youtu.be/CUxH_rWSI1k?t=3273 */
 /* https://animate.style/ */
 /* BOARD STYLING */
+.column-container {
+    display: flex;
+    flex-direction: column-reverse;
+    margin: 0.05rem;
+}
+
 .coin-drop-animation {
-    animation: animate__fadeInDownBig;
-    animation-duration: 4s;
+    animation-name: coin_drop;
+    animation-duration: 1s;
+    animation-timing-function: ease;
+    animation-fill-mode: forwards;
+}
+
+@keyframes coin_drop {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
