@@ -3,6 +3,8 @@ import Multiplayer from "@/confourComponents/game/Multiplayer.tsx";
 import Hamburger from "@/confourComponents/Hamburger.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 
+import PixiComponent from "@/confourComponents/game/Singleplayer.tsx";
+
 function HomePage() {
   const { user } = useAuth();
   return (
@@ -19,7 +21,7 @@ function HomePage() {
         </ul>
       </div>
       <div className="flex-grow flex items-center justify-center">
-        {user ? <Multiplayer /> : <p>Login for multiplayer</p>}
+        {user ? <Multiplayer /> : <PixiComponent />}
       </div>
     </div>
   );
