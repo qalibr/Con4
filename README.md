@@ -2,11 +2,16 @@
 
 This is a connect four game web app using React (Vite) and Capacitor for porting to native platforms.
 
+## Acknowledgement
+
+The game rendering and logic has been taken from [this project](https://github.com/miro-jelaska/connect-four)
+made by [Miroslav Jelaska](https://github.com/miro-jelaska), and the MIT license has been included in this project.
+
 ## TL;DR
 
 Command line commands for development:
 
-### Web development with live reload.
+### Web development with live reload. 
 
 ``npm run dev``
 
@@ -33,6 +38,18 @@ _Requires setup, see below_
 ### We can run the test suite with Docker.
 
 ``docker-compose up``
+
+### Git -- Updating feature branches with latest changes from main.
+
+1. ``git checkout main`` Change to main branch
+2. ``git fetch origin main`` Fetch changes on remote repo
+3. ``git pull origin main`` Pull changes from remote repo
+4. ``git checkout some-feature`` Change to feature branch
+5. ``git merge main`` Merge changes from main into feature branch.
+6. Resolve potential conflicts.
+7. ``git add .`` Stage all changes.
+8. ``git commit -m "merged main"`` Commit and append message.
+9. ``git push origin some-feature`` Push to remote repo.
 
 ## Tools
 
