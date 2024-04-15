@@ -34,6 +34,7 @@ const expectedDependencies = {
   "react-dom": "^18.2.0",
   "react-hook-form": "^7.50.1",
   "react-router-dom": "^6.22.0",
+  "simple-icons": "^11.12.0",
   "tailwind-merge": "^2.2.1",
   "tailwindcss-animate": "^1.0.7",
   uuid: "^9.0.1",
