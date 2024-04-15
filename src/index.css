@@ -4,6 +4,8 @@
  
 @layer base {
   :root {
+    --icon-fill: #000; /* Dark color for light mode */
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -36,6 +38,8 @@
   }
  
   .dark {
+    --icon-fill: #fff; /* Light color for the dark mode */
+
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
  

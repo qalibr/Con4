@@ -2,6 +2,8 @@ import useAuth from "@/confourHooks/useAuth.tsx";
 import Multiplayer from "@/confourComponents/game/Multiplayer.tsx";
 import Hamburger from "@/confourComponents/Hamburger.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
+import Login from "@/confourComponents/Login.tsx";
+import { LandingPage } from "@/confourComponents/LandingPage.tsx";
 
 function HomePage() {
   const { user } = useAuth();
@@ -19,7 +21,9 @@ function HomePage() {
         </ul>
       </div>
       <div className="flex-grow flex items-center justify-center">
-        {user ? <Multiplayer /> : <p>Login for multiplayer</p>}
+        {user ? <Multiplayer /> : (
+            <LandingPage/>
+        )}
       </div>
     </div>
   );

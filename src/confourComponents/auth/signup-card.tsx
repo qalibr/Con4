@@ -78,6 +78,16 @@ export function SignupCard({ onCancel }: Props) {
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="grid w-full gap-4">
+              <div className="flex flex-col space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                />
+              </div>
 
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="username">Username</Label>
@@ -91,16 +101,6 @@ export function SignupCard({ onCancel }: Props) {
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -110,6 +110,7 @@ export function SignupCard({ onCancel }: Props) {
                   placeholder="Enter your password"
                 />
               </div>
+
               {error && <p className="text-red-500">{error}</p>}
             </div>
             <CardFooter className="flex justify-between mt-4">

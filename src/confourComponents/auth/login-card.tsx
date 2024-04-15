@@ -56,7 +56,7 @@ export function LoginCard({ onCancel, onLoginSuccess }: Props) {
           <form onSubmit={handleLogin}>
             <div className="grid w-full gap-4">
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="login-email">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="login-email"
                   type="email"
@@ -66,7 +66,7 @@ export function LoginCard({ onCancel, onLoginSuccess }: Props) {
                 />
               </div>
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="login-password">Password</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="login-password"
                   type="password"

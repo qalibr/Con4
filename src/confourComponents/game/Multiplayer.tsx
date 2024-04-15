@@ -917,29 +917,29 @@ const Multiplayer = () => {
 
     // prettier-ignore
     console.log(
-            "Debug info :", where, "\n",
-            // "\nentryId: ", entryId, " (id of row in db)",
-            "\nmatchId: ", matchId,
-            // "\nredId: ", redId,
-            // "\ngreenId: ", greenId,
-            "\nredReady", redReady,
-            "\ngreenReady: ", greenReady,
-            "\ncurrentPlayer: ", currentPlayer,
-            // "\nYouAreRed?: ", user.id === redId,
-            // "\nYouAreGreen?: ", user.id === greenId,
-            // "\nmadeMove: ", madeMove,
-            "\nmoveNumber: ", moveNumber,
-            "\nisQueued: ", isQueued,
-            "\nqueueCount", queueCount,
-            "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-            "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-            "\ngameStatus: ", gameStatus, " (state of the game)",
-            // "\nloading: ", loading,
-            "\nboard: ", board,
-            "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-            "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
-            "\nmatchConcluded: ", matchConcluded,
-        );
+                    "Debug info :", where, "\n",
+                    // "\nentryId: ", entryId, " (id of row in db)",
+                    "\nmatchId: ", matchId,
+                    // "\nredId: ", redId,
+                    // "\ngreenId: ", greenId,
+                    "\nredReady", redReady,
+                    "\ngreenReady: ", greenReady,
+                    "\ncurrentPlayer: ", currentPlayer,
+                    // "\nYouAreRed?: ", user.id === redId,
+                    // "\nYouAreGreen?: ", user.id === greenId,
+                    // "\nmadeMove: ", madeMove,
+                    "\nmoveNumber: ", moveNumber,
+                    "\nisQueued: ", isQueued,
+                    "\nqueueCount", queueCount,
+                    "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
+                    "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
+                    "\ngameStatus: ", gameStatus, " (state of the game)",
+                    // "\nloading: ", loading,
+                    "\nboard: ", board,
+                    "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
+                    "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
+                    "\nmatchConcluded: ", matchConcluded,
+                );
 
     // console.log("\n\n-- board: ", board, ", ", where);
   };
@@ -957,10 +957,10 @@ const Multiplayer = () => {
                   <div
                     key={rowIndex}
                     className={`c4-cell c4-cell-${cell || "empty"} ${
-                        lastModifiedCell.columnNumber === columnIndex &&
-                        lastModifiedCell.rowNumber === rowIndex
-                            ? "c4-coin-drop-animation"
-                            : ""
+                      lastModifiedCell.columnNumber === columnIndex &&
+                      lastModifiedCell.rowNumber === rowIndex
+                        ? "c4-coin-drop-animation"
+                        : ""
                     }`}
                   ></div>
                 ))}
@@ -985,10 +985,10 @@ const Multiplayer = () => {
                     key={rowIndex}
                     onClick={(e) => handleColumnClick(columnIndex, e)}
                     className={`c4-cell c4-cell-${cell || "empty"} ${
-                        lastModifiedCell.columnNumber === columnIndex &&
-                        lastModifiedCell.rowNumber === rowIndex
-                            ? "c4-coin-drop-animation"
-                            : ""
+                      lastModifiedCell.columnNumber === columnIndex &&
+                      lastModifiedCell.rowNumber === rowIndex
+                        ? "c4-coin-drop-animation"
+                        : ""
                     }`}
                   ></div>
                 ))}
@@ -1002,27 +1002,44 @@ const Multiplayer = () => {
       {/* Dynamic elements, queue logic, loading spinner, etc. */}
       <div className="w-full max-w-md h-32 flex flex-col items-center justify-center space-y-2">
         {loading ? (
-          <div className="lds-dual-ring mb-2"></div>
+          <div className="lds-dual-ring -translate-y-5 scale-50"></div>
         ) : (
           <div>
-            {/* Spinner while waiting for other player to accept */}
-            {user && user.id === redId && redReady && matchFound && (
-              <div className="lds-dual-ring mb-2"></div>
+            {user && matchStatus && !matchConcluded && (
+              <div
+                className={`c4-turn-indicator ${currentPlayer === (user.id === redId ? "red" : "green") ? "c4-your-turn" : "c4-waiting-turn"}`}
+              >
+                {currentPlayer === (user.id === redId ? "red" : "green")
+                  ? `Your turn: ${moveTimer}s`
+                  : "Waiting for opponent..."}
+              </div>
             )}
 
-            {/*Queue up*/}
+            {/* Spinner while waiting for other player to accept */}
+            {user && user.id === redId && redReady && matchFound && (
+              <div className="lds-dual-ring -translate-y-5 scale-50"></div>
+            )}
+
+            {/* Enter Queue */}
             {!isQueued && !matchStatus && (
-              <Button onClick={handleEnterQueue} className="mb-2">
+              <Button
+                onClick={handleEnterQueue}
+                className="mb-2"
+                variant="default"
+              >
                 Join Queue
               </Button>
             )}
-
-            {/*{isQueued && !matchFound && (*/}
-            {/*  <p className="mb-2">*/}
-            {/*    You are currently in the queue. Please wait for your match to*/}
-            {/*    start.*/}
-            {/*  </p>*/}
-            {/*)}*/}
+            {/* Leave Queue */}
+            {isQueued && !matchFound && (
+              <Button
+                onClick={handleLeaveQueue}
+                className="mb-2"
+                variant="destructive"
+              >
+                Leave Queue
+              </Button>
+            )}
 
             {/* Accept/Decline */}
             {user && matchFound && (!redReady || !greenReady) && (
@@ -1033,6 +1050,7 @@ const Multiplayer = () => {
                     matchId && user && acceptPlayerReady(matchId, user.id)
                   }
                   className="mb-1"
+                  variant="secondary"
                 >
                   Accept
                 </Button>
@@ -1040,24 +1058,11 @@ const Multiplayer = () => {
                   onClick={() =>
                     matchId && user && declinePlayerReady(matchId, user.id)
                   }
+                  variant="destructive"
                 >
                   Decline
                 </Button>
               </div>
-            )}
-
-            {matchStatus && !matchConcluded && (
-              <p className="mb-2">You are currently in a match.</p>
-            )}
-
-            {isQueued && !matchFound && (
-              <Button
-                variant="destructive"
-                onClick={handleLeaveQueue}
-                className="mb-2"
-              >
-                Leave Queue
-              </Button>
             )}
 
             {matchStatus && matchConcluded && (
@@ -1069,30 +1074,14 @@ const Multiplayer = () => {
               </Button>
             )}
 
-            <div>
-              <ul className="flex-auto items-center">
-                <li style={{ marginTop: "0px" }}>
-                  {gameStatus !== "inProgress" && matchId && (
-                    <Alert>
-                      Game Over:{" "}
-                      {gameStatus === "draw"
-                        ? "Draw"
-                        : `Winner is ${gameStatus}`}
-                      {" ... "} Exit: {countdown}
-                    </Alert>
-                  )}
-                </li>
-                <li>
-                  {matchId && matchStatus && !matchConcluded && (
-                    <p>Move Number: {moveNumber}</p>
-                  )}
-                </li>
-                <li>
-                  {matchId && matchStatus && gameStatus === "inProgress" && (
-                    <p>Time Limit: {moveTimer}</p>
-                  )}
-                </li>
-              </ul>
+            <div className="c4-game-over-notice">
+              {gameStatus !== "inProgress" && matchId && (
+                <Alert>
+                  Game Over:{" "}
+                  {gameStatus === "draw" ? "Draw" : `Winner is ${gameStatus}`}
+                  {" ... "} Exit: {countdown}
+                </Alert>
+              )}
             </div>
           </div>
         )}
