@@ -30,3 +30,8 @@ export interface MatchEntry {
   board: string; // Stored in database as JSON, so here it will be string.
   match_concluded: boolean; // Variable to mark matches as finished
 }
+
+export interface LastModifiedCell {
+  columnNumber: number | null;
+  rowNumber: number | null;
+}

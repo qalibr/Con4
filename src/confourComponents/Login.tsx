@@ -63,9 +63,7 @@ const Login = () => {
         <p></p>
       ) : user ? (
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button>User</Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger>User</DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem onClick={toggleChangeUsername}>
               Change Username
@@ -76,9 +74,7 @@ const Login = () => {
         </DropdownMenu>
       ) : (
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button>Login</Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger>Login</DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuLabel>Login Options</DropdownMenuLabel>
             <DropdownMenuSeparator />
