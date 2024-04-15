@@ -25,6 +25,7 @@ const expectedDependencies = {
   "@supabase/supabase-js": "^2.39.3",
   "@tanstack/react-table": "^8.12.0",
   "@types/uuid": "^9.0.8",
+  "animate.css": "^4.1.1",
   "class-variance-authority": "^0.7.0",
   clsx: "^2.1.0",
   "lucide-react": "^0.323.0",

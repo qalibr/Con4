@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/supabaseClient.tsx";
+import "animate.css";
 import useAuth from "@/confourHooks/useAuth.tsx";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button.tsx";
-import { Progress } from "@/components/ui/progress"
 
 import {
   TokenBoard,
@@ -12,6 +12,7 @@ import {
   MatchEntry,
   GameStatus,
   Player,
+  LastModifiedCell,
 } from "@/confourComponents/game/types.tsx";
 import {
   checkBoardState,
@@ -63,8 +64,13 @@ const Multiplayer = () => {
 
   // Countdown variable to notify users of when they would be thrown out of a match.
   const [countdown, setCountdown] = useState<number>(0);
-  const moveTimeLimit = 5;
+  const moveTimeLimit = 500;
   const [moveTimer, setMoveTimer] = useState<number>(moveTimeLimit);
+  const [lastModifiedCell, setLastModifiedCell] = useState<LastModifiedCell>({
+    columnNumber: null,
+    rowNumber: null,
+  });
+
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
    *  Update user state variables for conditional rendering... */
@@ -374,6 +380,8 @@ const Multiplayer = () => {
       setBoard(generateEmptyBoard); // Flush board
       setIsQueued(false);
       setLoading(false);
+
+      setLastModifiedCell({ columnNumber: null, rowNumber: null });
     }
   };
 
@@ -456,9 +464,12 @@ const Multiplayer = () => {
 
     let timerId: string | number | NodeJS.Timeout | undefined;
 
-    if (currentPlayer === (user.id === redId ? "red" : "green") && matchStatus) {
+    if (
+      currentPlayer === (user.id === redId ? "red" : "green") &&
+      matchStatus
+    ) {
       timerId = setInterval(() => {
-        setMoveTimer(prevTimer => {
+        setMoveTimer((prevTimer) => {
           if (prevTimer === 1) {
             // Time's up, current player failed to make a move
             const winningPlayer = currentPlayer === "red" ? "green" : "red";
@@ -473,7 +484,7 @@ const Multiplayer = () => {
 
     return () => {
       clearInterval(timerId);
-      setMoveTimer(moveTimeLimit);  // Reset timer when the effect cleans up
+      setMoveTimer(moveTimeLimit); // Reset timer when the effect cleans up
     };
   }, [currentPlayer, matchStatus]);
 
@@ -788,8 +799,13 @@ const Multiplayer = () => {
 
   /* ccc
    *  Handling match state variables when players click the columns... */
-  const handleColumnClick = async (colIndex: number) => {
-    if (!user || !matchId || gameStatus !== "inProgress" || !board) return;
+  // eslint-disable-next-line
+  const handleColumnClick = async (colIndex: number, event: any) => {
+    if (!user || !matchId || gameStatus !== "inProgress" || !board) {
+      event.stopPropagation();
+      console.log("Child");
+      return;
+    }
 
     // Stop player from moving out of turn...
     if (
@@ -801,16 +817,28 @@ const Multiplayer = () => {
 
     const newBoard = [...board];
     let tokenPlaced: boolean = false;
-    for (let i = 0; i <= newBoard[colIndex].length - 1; i++) {
-      if (newBoard[colIndex][i] === null) {
-        newBoard[colIndex][i] = currentPlayer; // Board updated with current players token
+    let placedRow = null;
+
+    for (
+      let rowIndex = 0;
+      rowIndex <= newBoard[colIndex].length - 1;
+      rowIndex++
+    ) {
+      if (newBoard[colIndex][rowIndex] === null) {
+        newBoard[colIndex][rowIndex] = currentPlayer; // Board updated with current players token
         tokenPlaced = true;
+        placedRow = rowIndex;
         break;
       }
     }
 
     if (!tokenPlaced) {
+      event.stopPropagation();
       return; // Column must be full...
+    }
+
+    if (placedRow !== null) {
+      setLastModifiedCell({ columnNumber: colIndex, rowNumber: placedRow });
     }
 
     const newTurn = currentPlayer === "red" ? "green" : "red";
@@ -822,6 +850,7 @@ const Multiplayer = () => {
     setMoveNumber(newMoveNumber);
 
     await updateGame(newBoard, newTurn, newMoveNumber);
+    event.stopPropagation();
   };
 
   const updateGame = async (
@@ -888,29 +917,29 @@ const Multiplayer = () => {
 
     // prettier-ignore
     console.log(
-                    "Debug info :", where, "\n",
-                    // "\nentryId: ", entryId, " (id of row in db)",
-                    "\nmatchId: ", matchId,
-                    // "\nredId: ", redId,
-                    // "\ngreenId: ", greenId,
-                    "\nredReady", redReady,
-                    "\ngreenReady: ", greenReady,
-                    "\ncurrentPlayer: ", currentPlayer,
-                    // "\nYouAreRed?: ", user.id === redId,
-                    // "\nYouAreGreen?: ", user.id === greenId,
-                    // "\nmadeMove: ", madeMove,
-                    "\nmoveNumber: ", moveNumber,
-                    "\nisQueued: ", isQueued,
-                    "\nqueueCount", queueCount,
-                    "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-                    "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-                    "\ngameStatus: ", gameStatus, " (state of the game)",
-                    // "\nloading: ", loading,
-                    "\nboard: ", board,
-                    "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-                    "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
-                    "\nmatchConcluded: ", matchConcluded,
-                );
+            "Debug info :", where, "\n",
+            // "\nentryId: ", entryId, " (id of row in db)",
+            "\nmatchId: ", matchId,
+            // "\nredId: ", redId,
+            // "\ngreenId: ", greenId,
+            "\nredReady", redReady,
+            "\ngreenReady: ", greenReady,
+            "\ncurrentPlayer: ", currentPlayer,
+            // "\nYouAreRed?: ", user.id === redId,
+            // "\nYouAreGreen?: ", user.id === greenId,
+            // "\nmadeMove: ", madeMove,
+            "\nmoveNumber: ", moveNumber,
+            "\nisQueued: ", isQueued,
+            "\nqueueCount", queueCount,
+            "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
+            "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
+            "\ngameStatus: ", gameStatus, " (state of the game)",
+            // "\nloading: ", loading,
+            "\nboard: ", board,
+            "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
+            "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
+            "\nmatchConcluded: ", matchConcluded,
+        );
 
     // console.log("\n\n-- board: ", board, ", ", where);
   };
@@ -921,14 +950,18 @@ const Multiplayer = () => {
       <div className="w-full max-w-md mb-2">
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
-          <div className="flex justify-center">
+          <div className="c4-board flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col-reverse m-1">
+              <div key={columnIndex} className={`c4-column-container`}>
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
-                    className="w-12 h-12 border border-black bg-white"
-                    style={{ backgroundColor: cell || "white" }}
+                    className={`c4-cell c4-cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                            ? "c4-coin-drop-animation"
+                            : ""
+                    }`}
                   ></div>
                 ))}
               </div>
@@ -938,15 +971,25 @@ const Multiplayer = () => {
 
         {/* Interactive columns for active match */}
         {matchStatus && board && (
-          <div className="flex justify-center">
+          <div className="c4-board flex justify-center">
             {board.map((column, columnIndex) => (
-              <div key={columnIndex} className="flex flex-col-reverse m-1">
+              <div
+                key={columnIndex}
+                className={`c4-column-container`}
+                onClick={() => {
+                  console.log("L");
+                }}
+              >
                 {column.map((cell, rowIndex) => (
                   <div
                     key={rowIndex}
-                    onClick={() => handleColumnClick(columnIndex)}
-                    className="w-12 h-12 border border-black cursor-pointer"
-                    style={{ backgroundColor: cell || "white" }}
+                    onClick={(e) => handleColumnClick(columnIndex, e)}
+                    className={`c4-cell c4-cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                            ? "c4-coin-drop-animation"
+                            : ""
+                    }`}
                   ></div>
                 ))}
               </div>
@@ -1008,7 +1051,11 @@ const Multiplayer = () => {
             )}
 
             {isQueued && !matchFound && (
-              <Button variant="destructive" onClick={handleLeaveQueue} className="mb-2">
+              <Button
+                variant="destructive"
+                onClick={handleLeaveQueue}
+                className="mb-2"
+              >
                 Leave Queue
               </Button>
             )}
