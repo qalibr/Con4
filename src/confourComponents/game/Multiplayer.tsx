@@ -7,19 +7,19 @@ import { Button } from "@/components/ui/button.tsx";
 
 import {
   TokenBoard,
-  QueueEntry,
   QueueCount,
-  MatchEntry,
   GameStatus,
   Player,
-  LastModifiedCell,
-  MatchHistory,
 } from "@/confourComponents/game/types.tsx";
 import {
   checkBoardState,
   generateEmptyBoard,
 } from "@/confourComponents/game/game-logic.tsx";
 import { Alert } from "@/components/ui/alert.tsx";
+import { QueueEntry } from "@/confourComponents/game/queueEntry.tsx";
+import { MatchEntry } from "@/confourComponents/game/matchEntry.tsx";
+import { LastModifiedCell } from "@/confourComponents/game/lastModifiedCell.tsx";
+import { MatchHistory } from "@/confourComponents/game/matchHistory.tsx"; // TODO: Not yet implemented
 
 const Multiplayer = () => {
   const { user } = useAuth();
