@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { ModeToggle } from "@/components/mode-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import Login from "@/confourComponents/Login.tsx";
-import OnlineTracker from "@/confourComponents/auth/online-tracker.tsx";
 import { supabase } from "../supabaseClient.tsx";
 
 import {
@@ -21,9 +17,9 @@ import { ChangeUsername } from "@/confourComponents/auth/change-username.tsx";
 import useAuth from "@/confourHooks/useAuth.tsx";
 
 // https://supabase.com/docs/reference/javascript/auth-signinwithidtoken
-export const Hamburger = () => {
+export const Menu = () => {
   const { user } = useAuth();
-  const [hamburgerOpen, setHamburgerOpen] = useState<boolean>(false);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
   const [showChangeUsername, setShowChangeUsername] = useState(false);
@@ -58,9 +54,9 @@ export const Hamburger = () => {
     setShowLoginCard(!showLoginCard);
   };
 
-  const toggleHamburger = () => {
-    setHamburgerOpen(!hamburgerOpen);
-    console.log(hamburgerOpen);
+  const toggleMenuOpen = () => {
+    setMenuOpen(!menuOpen);
+    console.log(menuOpen);
   };
 
   const toggleChangeUsername = () => {
@@ -72,7 +68,7 @@ export const Hamburger = () => {
       <DropdownMenu>
         <DropdownMenuTrigger
           asChild
-          onClick={toggleHamburger}
+          onClick={toggleMenuOpen}
           className="flex items-center"
         >
           <Button variant="outline">
@@ -172,4 +168,4 @@ export const Hamburger = () => {
   );
 };
 
-export default Hamburger;
+export default Menu;
