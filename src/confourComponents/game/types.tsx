@@ -29,9 +29,22 @@ export interface MatchEntry {
   current_player: Player;
   board: string; // Stored in database as JSON, so here it will be string.
   match_concluded: boolean; // Variable to mark matches as finished
+  red_username: string;
+  green_username: string;
 }
 
 export interface LastModifiedCell {
   columnNumber: number | null;
   rowNumber: number | null;
+}
+
+export interface Username_ {
+  user_id: string | null;
+  username: string | null;
+}
+
+export interface MatchHistory {
+  game_status: GameStatus | Player;
+  red_id: string | null;
+  green_id: string | null;
 }

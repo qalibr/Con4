@@ -78,7 +78,6 @@
     }
 }
 
-/* https://youtu.be/CUxH_rWSI1k?t=3273 */
 /* https://animate.style/ */
 /* BOARD STYLING */
 .c4-board {
@@ -142,6 +141,16 @@
     margin-bottom: 1rem;
     border-radius: 20px;
     font-size: 1.2rem;
+    color: white;
+    text-align: center;
+}
+
+.c4-players-bar {
+    background-color: #353935;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
     color: white;
     text-align: center;
 }

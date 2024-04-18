@@ -1,12 +1,11 @@
+import App from "./App.tsx";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
-import App from "./App.tsx";
 import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import HomePage from "./routes/HomePage.tsx";
 import DashboardPage from "./routes/DashboardPage.tsx";
-import Hamburger from "./confourComponents/Hamburger.tsx";
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
@@ -15,14 +14,13 @@ root.render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />}>
-            {/* HomePage.tsx set as home right now, prompt for login. */}
+            {/* HomePage acts as landing page with Sign up/Login. */}
             <Route path="" element={<HomePage />}></Route>
 
-            {/* Navigation for other pages here. */}
-            <Route path="/app/dashboard" element={<DashboardPage />}></Route>
+            {/* Dashboard, TODO: add statistics and other elements... */}
+            <Route path="/dashboard" element={<DashboardPage />}></Route>
 
             {/* Wildcard in case user ends up in an undefined route. */}
-            {/* TODO: Could make it 404 page? */}
             <Route
               path="*"
               element={

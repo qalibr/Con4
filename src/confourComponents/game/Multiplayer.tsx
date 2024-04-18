@@ -13,6 +13,7 @@ import {
   GameStatus,
   Player,
   LastModifiedCell,
+  MatchHistory,
 } from "@/confourComponents/game/types.tsx";
 import {
   checkBoardState,
@@ -70,6 +71,12 @@ const Multiplayer = () => {
     columnNumber: null,
     rowNumber: null,
   });
+  const [usernameRed, setUsernameRed] = useState<string | undefined>(
+    "Player_Red",
+  );
+  const [usernameGreen, setUsernameGreen] = useState<string | undefined>(
+    "Player_Green",
+  );
 
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    *  QUEUE
@@ -206,6 +213,8 @@ const Multiplayer = () => {
           setMoveNumber(userMatchData.move_number);
           setMadeMove(userMatchData.made_move);
           setCurrentPlayer(userMatchData.current_player);
+          setUsernameRed(userMatchData.red_username);
+          setUsernameGreen(userMatchData.green_username);
 
           // Parsing the JSON back into a TokenBoard array.
           const fetchedBoard: TokenBoard = JSON.parse(userMatchData.board);
@@ -213,6 +222,8 @@ const Multiplayer = () => {
         } else {
           setMatchStatus(false); // Match is not true if current user has no match entry
         }
+
+        // TODO: Fetching username and match history
       } catch (error) {
         setMatchStatus(false); // NOTE: This could be problematic?
         console.error("Error while fetching match entries...", error);
@@ -241,6 +252,8 @@ const Multiplayer = () => {
               setMoveNumber(updateId.move_number);
               setMadeMove(updateId.made_move);
               setCurrentPlayer(updateId.current_player);
+              setUsernameRed(updateId.red_username);
+              setUsernameGreen(updateId.green_username);
 
               // Parse the board and broadcast changes so the other player knows about them.
               const parseBoard: TokenBoard = JSON.parse(updateId.board);
@@ -335,14 +348,16 @@ const Multiplayer = () => {
         created_at: matchData.created_at,
         match_id: matchId,
         match_status: false,
-        match_concluded: true,
         game_status: matchData.game_status,
         red_id: matchData.red_id,
         green_id: matchData.green_id,
         move_number: matchData.move_number,
-        made_move: matchData.made_move,
-        board: matchData.board,
         current_player: matchData.current_player,
+        board: matchData.board,
+        match_concluded: true,
+        made_move: matchData.made_move,
+        red_username: "Ruby", // Not saving the username in match history
+        green_username: "Emerald", // Not saving the username in match history
       };
 
       const { error: deleteError } = await supabase
@@ -380,6 +395,8 @@ const Multiplayer = () => {
       setBoard(generateEmptyBoard); // Flush board
       setIsQueued(false);
       setLoading(false);
+      setUsernameRed("Player_Red");
+      setUsernameGreen("Player_Green");
 
       setLastModifiedCell({ columnNumber: null, rowNumber: null });
     }
@@ -742,6 +759,31 @@ const Multiplayer = () => {
       setBoard(newBoard);
       const jsonBoard = JSON.stringify(newBoard);
 
+      // Pulling usernames
+      const { data: usersData, error: fetchUsersError } = await supabase
+        .from("users")
+        .select("user_id, username");
+
+      // Assigning default usernames
+      let fetched_red_username = "Player_Ruby";
+      let fetched_green_username = "Player_Emerald";
+
+      if (fetchUsersError) {
+        console.error(
+          "Something went wrong when fetching users.",
+          fetchUsersError,
+        );
+      } else if (usersData) {
+        // If data was retrieved assign them again.
+        fetched_red_username =
+          usersData.find((entry) => entry.user_id === redId)?.username ||
+          "Player_Ruby";
+        fetched_green_username =
+          usersData.find((entry) => entry.user_id === greenId)?.username ||
+          "Player_Emerald";
+      }
+
+      // Creating match entry to push to "matches" table
       const matchEntry: MatchEntry = {
         id: entryId,
         match_id: matchId,
@@ -755,6 +797,8 @@ const Multiplayer = () => {
         made_move: null,
         board: jsonBoard,
         current_player: "red",
+        red_username: fetched_red_username,
+        green_username: fetched_green_username,
       };
 
       // Only one user needs to do the insert and deletion actions, this will prevent unnecessary errors.
@@ -773,7 +817,7 @@ const Multiplayer = () => {
           return;
         }
 
-        // Perform the deletion...
+        // Delete the queue entry
         const { error: deleteError } = await supabase
           .from("queue")
           .delete()
@@ -784,6 +828,22 @@ const Multiplayer = () => {
           return;
         } else {
           setCurrentQueueEntry([]); // Purge the QueueEntry after deletions so data doesn't hang around...
+        }
+
+        const { data: matchHistoryData, error: fetchMatchHistoryError } =
+          await supabase
+            .from("match_history")
+            .select("red_id, green_id, game_status");
+
+        if (fetchMatchHistoryError) {
+          console.error(
+            "Something went wrong when fetching users.",
+            fetchMatchHistoryError,
+          );
+        } else if (matchHistoryData) {
+          // setRedMatchHistory(matchHistoryData.find(
+          //     (entry) => entry.red_id === red
+          // ))
         }
       }
 
@@ -950,50 +1010,76 @@ const Multiplayer = () => {
       <div className="w-full max-w-md mb-2">
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
-          <div className="c4-board flex justify-center">
-            {board.map((column, columnIndex) => (
-              <div key={columnIndex} className={`c4-column-container`}>
-                {column.map((cell, rowIndex) => (
-                  <div
-                    key={rowIndex}
-                    className={`c4-cell c4-cell-${cell || "empty"} ${
-                      lastModifiedCell.columnNumber === columnIndex &&
-                      lastModifiedCell.rowNumber === rowIndex
-                        ? "c4-coin-drop-animation"
-                        : ""
-                    }`}
-                  ></div>
-                ))}
+          <div>
+            {user && (
+              <div className="c4-players-bar">
+                <div className="flex justify-items-start">
+                  {`${user.id === redId ? usernameRed : usernameGreen}: `}
+                </div>
+
+                <div className="flex justify-items-start">
+                  {`${user.id !== redId ? usernameRed : usernameGreen}: `}
+                </div>
               </div>
-            ))}
+            )}
+            <div className="c4-board flex justify-center">
+              {board.map((column, columnIndex) => (
+                <div key={columnIndex} className={`c4-column-container`}>
+                  {column.map((cell, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      className={`c4-cell c4-cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                          ? "c4-coin-drop-animation"
+                          : ""
+                      }`}
+                    ></div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Interactive columns for active match */}
         {matchStatus && board && (
-          <div className="c4-board flex justify-center">
-            {board.map((column, columnIndex) => (
-              <div
-                key={columnIndex}
-                className={`c4-column-container`}
-                onClick={() => {
-                  console.log("L");
-                }}
-              >
-                {column.map((cell, rowIndex) => (
-                  <div
-                    key={rowIndex}
-                    onClick={(e) => handleColumnClick(columnIndex, e)}
-                    className={`c4-cell c4-cell-${cell || "empty"} ${
-                      lastModifiedCell.columnNumber === columnIndex &&
-                      lastModifiedCell.rowNumber === rowIndex
-                        ? "c4-coin-drop-animation"
-                        : ""
-                    }`}
-                  ></div>
-                ))}
+          <div>
+            {user && (
+              <div className="c4-players-bar">
+                <div className="flex justify-items-start">
+                  {`${user.id === redId ? usernameRed : usernameGreen}: `}
+                </div>
+
+                <div className="flex justify-items-start">
+                  {`${user.id !== redId ? usernameRed : usernameGreen}: `}
+                </div>
               </div>
-            ))}
+            )}
+            <div className="c4-board flex justify-center">
+              {board.map((column, columnIndex) => (
+                <div
+                  key={columnIndex}
+                  className={`c4-column-container`}
+                  onClick={() => {
+                    console.log("L");
+                  }}
+                >
+                  {column.map((cell, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      onClick={(e) => handleColumnClick(columnIndex, e)}
+                      className={`c4-cell c4-cell-${cell || "empty"} ${
+                        lastModifiedCell.columnNumber === columnIndex &&
+                        lastModifiedCell.rowNumber === rowIndex
+                          ? "c4-coin-drop-animation"
+                          : ""
+                      }`}
+                    ></div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
