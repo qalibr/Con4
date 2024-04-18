@@ -1,9 +1,8 @@
 import useAuth from "@/confourHooks/useAuth.tsx";
-import Multiplayer from "@/confourComponents/game/Multiplayer.tsx";
+import MultiplayerScreen from "@/confourComponents/MultiplayerScreen.tsx";
 import Menu from "@/confourComponents/Menu.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
-import Login from "@/confourComponents/Login.tsx";
-import { LandingPage } from "@/confourComponents/LandingPage.tsx";
+import { LoginScreen } from "@/confourComponents/LoginScreen.tsx";
 
 function HomePage() {
   const { user } = useAuth();
@@ -21,8 +20,8 @@ function HomePage() {
         </ul>
       </div>
       <div className="flex-grow flex items-center justify-center">
-        {user ? <Multiplayer /> : (
-            <LandingPage/>
+        {user ? <MultiplayerScreen /> : (
+            <LoginScreen/>
         )}
       </div>
     </div>

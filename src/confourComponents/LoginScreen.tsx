@@ -13,7 +13,7 @@ import { SignupCard } from "@/confourComponents/auth/signup-card.tsx";
 import { LoginCard } from "@/confourComponents/auth/login-card.tsx";
 import { siGithub } from "simple-icons";
 
-export function LandingPage() {
+export function LoginScreen() {
   const [showSignupCard, setShowSignupCard] = useState(false);
   const [showLoginCard, setShowLoginCard] = useState(false);
 

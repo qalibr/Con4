@@ -21,7 +21,7 @@ import { MatchEntry } from "@/confourComponents/game/matchEntry.tsx";
 import { LastModifiedCell } from "@/confourComponents/game/lastModifiedCell.tsx";
 import { MatchHistory } from "@/confourComponents/game/matchHistory.tsx"; // TODO: Not yet implemented
 
-const Multiplayer = () => {
+const MultiplayerScreen = () => {
   const { user } = useAuth();
   const [entryId, setEntryId] = useState<number | undefined>(undefined); // The id of the row in Supabase.
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -1176,4 +1176,4 @@ const Multiplayer = () => {
   );
 };
 
-export default Multiplayer;
+export default MultiplayerScreen;
