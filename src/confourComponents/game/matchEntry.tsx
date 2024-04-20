@@ -2,7 +2,7 @@ import { GameStatus, Player } from "@/confourComponents/game/types.tsx";
 
 export interface MatchEntry {
         id: number | undefined;
-        created_at: string;
+        created_at: string | undefined;
         match_id: string | null;
         match_status: boolean; // Variable to mark a match as going from matchmaking to active
         game_status: GameStatus | Player;

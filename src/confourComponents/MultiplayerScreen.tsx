@@ -23,6 +23,11 @@ import { MatchHistory } from "@/confourComponents/game/matchHistory.tsx"; // TOD
 
 const MultiplayerScreen = () => {
   const { user } = useAuth();
+  const [error, setError] = useState<string>(""); // To give feedback to the user on what is wrong
+  const [loading, setLoading] = useState<boolean>(false); // Improve user experience with loading spinner
+
+  /*
+   * Basic id's */
   const [entryId, setEntryId] = useState<number | undefined>(undefined); // The id of the row in Supabase.
   const [matchId, setMatchId] = useState<string | null>(null);
   const [redId, setRedId] = useState<string | null>(null);
@@ -60,9 +65,6 @@ const MultiplayerScreen = () => {
   // Denotes if a player is queued or not
   const [isQueued, setIsQueued] = useState<boolean>(false);
 
-  // Improve user experience with loading spinner
-  const [loading, setLoading] = useState<boolean>(false);
-
   // Countdown variable to notify users of when they would be thrown out of a match.
   const [countdown, setCountdown] = useState<number>(0);
   const moveTimeLimit = 500;
@@ -71,11 +73,15 @@ const MultiplayerScreen = () => {
     columnNumber: null,
     rowNumber: null,
   });
+
+  const defaultUsernameRed: string = "Player_Red";
+  const defaultUsernameGreen: string = "Player_Green";
+
   const [usernameRed, setUsernameRed] = useState<string | undefined>(
-    "Player_Red",
+    defaultUsernameRed,
   );
   const [usernameGreen, setUsernameGreen] = useState<string | undefined>(
-    "Player_Green",
+    defaultUsernameGreen,
   );
 
   /* ccc - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -95,7 +101,7 @@ const MultiplayerScreen = () => {
     }
 
     /*
-     * Fetching the entire table... */
+     * Fetching the entire "queue" table... */
     const fetchingEntries = async () => {
       try {
         const { data: queueData, error: fetchError } = await supabase
@@ -104,23 +110,22 @@ const MultiplayerScreen = () => {
 
         if (fetchError) throw fetchError;
 
-        // NOTE: Fetching all queue data, and then look for current user.
+        // Fetching all queue data, and then look for current user.
         const userQueueEntry = queueData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
 
         if (userQueueEntry) {
           setCurrentQueueEntry(userQueueEntry);
-          setIsQueued(true);
+          setIsQueued(true); // Setting manually for smoother state handling
           setMatchId(userQueueEntry.match_id);
-          // setMatchFound(userQueueEntry.match_found); // duplicate for some reason?
           setRedId(userQueueEntry.red_id);
           setGreenId(userQueueEntry.green_id);
           setQueueCount(userQueueEntry.queue_count);
           setRedReady(userQueueEntry.red_ready);
           setGreenReady(userQueueEntry.green_ready);
 
-          // Match found?
+          // Was match found?
           setMatchFound(!!(userQueueEntry.red_id && userQueueEntry.green_id));
 
           // If both players are ready, set match status to true
@@ -132,17 +137,19 @@ const MultiplayerScreen = () => {
             await enterMatch(matchId, redId, greenId);
           }
         } else {
+          // If queue entry was not successfully retrieved, reset state
           setIsQueued(false);
           setMatchFound(false);
         }
       } catch (error) {
         console.error("Error fetching queue table...");
+        setError("Error occurred while fetching queue table.");
       } finally {
         if (
           (user.id === redId && redReady && !matchStatus && matchFound) ||
           (user.id === greenId && greenReady && !matchStatus && matchFound)
         ) {
-          // Already true
+          // Loading is already true here.
         } else {
           setLoading(false);
         }
@@ -151,7 +158,7 @@ const MultiplayerScreen = () => {
 
     fetchingEntries().catch(console.error);
 
-    // Broadcast changes to state to other players.
+    // Detect changed state to other players.
     const queueChannel = supabase
       .channel(`queue`)
       .on(
@@ -175,11 +182,12 @@ const MultiplayerScreen = () => {
       .subscribe();
 
     return () => {
-      queueChannel.unsubscribe();
+      queueChannel.unsubscribe().catch(console.error);
     };
 
-    // These dependencies are needed to trigger this useEffect so that it properly maintains the queue
-    // state.
+    /*
+     * This effect needs to be triggered when changes to these variables occur. */
+    // eslint-disable-next-line
   }, [user, isQueued, redReady, greenReady, matchId]);
 
   /* ccc
@@ -196,7 +204,7 @@ const MultiplayerScreen = () => {
 
         if (fetchError) throw fetchError;
 
-        // NOTE: Fetching all match data, and then look for current user.
+        // Fetching all match data, and then look for current user.
         const userMatchData = matchData.find(
           (entry) => entry.red_id === user.id || entry.green_id === user.id,
         );
@@ -216,7 +224,7 @@ const MultiplayerScreen = () => {
           setUsernameRed(userMatchData.red_username);
           setUsernameGreen(userMatchData.green_username);
 
-          // Parsing the JSON back into a TokenBoard array.
+          // Parsing the JSON back into a "TokenBoard" array.
           const fetchedBoard: TokenBoard = JSON.parse(userMatchData.board);
           setBoard(fetchedBoard);
         } else {
@@ -227,6 +235,7 @@ const MultiplayerScreen = () => {
       } catch (error) {
         setMatchStatus(false); // NOTE: This could be problematic?
         console.error("Error while fetching match entries...", error);
+        setError("Error while fetching match entries...");
       }
     };
 
@@ -255,7 +264,7 @@ const MultiplayerScreen = () => {
               setUsernameRed(updateId.red_username);
               setUsernameGreen(updateId.green_username);
 
-              // Parse the board and broadcast changes so the other player knows about them.
+              // Parse the board and detect changes so the other player knows about them.
               const parseBoard: TokenBoard = JSON.parse(updateId.board);
 
               if (parseBoard) {
@@ -277,10 +286,10 @@ const MultiplayerScreen = () => {
       .subscribe();
 
     return () => {
-      matchChannel.unsubscribe();
+      matchChannel.unsubscribe().catch(console.error);
     };
 
-    // These are the dependencies needed to make sure this useEffect is triggered at the right times.
+    // eslint-disable-next-line
   }, [user, moveNumber, matchStatus, gameStatus, matchId]);
 
   /* ccc
@@ -318,9 +327,9 @@ const MultiplayerScreen = () => {
       }
     };
 
-    gameState();
+    gameState().catch(console.error);
 
-    // Simply trigger on moveNumber, nothing more is needed.
+    // eslint-disable-next-line
   }, [moveNumber]);
 
   /* ccc
@@ -395,8 +404,8 @@ const MultiplayerScreen = () => {
       setBoard(generateEmptyBoard); // Flush board
       setIsQueued(false);
       setLoading(false);
-      setUsernameRed("Player_Red");
-      setUsernameGreen("Player_Green");
+      setUsernameRed(defaultUsernameRed);
+      setUsernameGreen(defaultUsernameGreen);
 
       setLastModifiedCell({ columnNumber: null, rowNumber: null });
     }
@@ -431,6 +440,8 @@ const MultiplayerScreen = () => {
         }
       };
     }
+
+    // eslint-disable-next-line
   }, [matchConcluded]);
 
   /* ccc
@@ -447,11 +458,7 @@ const MultiplayerScreen = () => {
       queueTimeout = true;
     } else if (matchFound && user.id === greenId && !greenReady) {
       queueTimeout = true;
-    } else if (matchFound && (!redReady || !greenReady)) {
-      queueTimeout = true;
-    } else {
-      queueTimeout = false;
-    }
+    } else queueTimeout = matchFound && (!redReady || !greenReady);
 
     if (queueTimeout) {
       intervalId = setInterval(() => {
@@ -472,6 +479,8 @@ const MultiplayerScreen = () => {
         clearInterval(intervalId);
       }
     };
+
+    // eslint-disable-next-line
   }, [matchFound, redReady, greenReady]);
 
   /* ccc
@@ -503,6 +512,8 @@ const MultiplayerScreen = () => {
       clearInterval(timerId);
       setMoveTimer(moveTimeLimit); // Reset timer when the effect cleans up
     };
+
+    // eslint-disable-next-line
   }, [currentPlayer, matchStatus]);
 
   /* ccc
@@ -745,11 +756,11 @@ const MultiplayerScreen = () => {
    *  This function will enter match, meaning it will create an entry in "matches" table,
    *  then it will delete the previous record in the "queue" table, if successful. */
   const enterMatch = async (
-    matchId: string | null,
-    redId: string | null,
-    greenId: string | null,
+    match_id: string | null,
+    red_id: string | null,
+    green_id: string | null,
   ) => {
-    if (!user || !redId || !greenId || !matchId) return;
+    if (!user || !red_id || !green_id || !match_id) return;
     setLoading(true);
 
     try {
@@ -765,8 +776,8 @@ const MultiplayerScreen = () => {
         .select("user_id, username");
 
       // Assigning default usernames
-      let fetched_red_username = "Player_Ruby";
-      let fetched_green_username = "Player_Emerald";
+      let fetched_red_username;
+      let fetched_green_username;
 
       if (fetchUsersError) {
         console.error(
@@ -776,35 +787,35 @@ const MultiplayerScreen = () => {
       } else if (usersData) {
         // If data was retrieved assign them again.
         fetched_red_username =
-          usersData.find((entry) => entry.user_id === redId)?.username ||
-          "Player_Ruby";
+          usersData.find((entry) => entry.user_id === red_id)?.username ||
+          defaultUsernameRed;
         fetched_green_username =
-          usersData.find((entry) => entry.user_id === greenId)?.username ||
-          "Player_Emerald";
+          usersData.find((entry) => entry.user_id === green_id)?.username ||
+          defaultUsernameGreen;
       }
 
-      // Creating match entry to push to "matches" table
+      // Creating match entry to insert to "matches" table
       const matchEntry: MatchEntry = {
-        id: entryId,
-        match_id: matchId,
-        created_at: new Date().toISOString(),
-        match_status: true,
+        id: undefined, // Let supabase assign ID
+        match_id: match_id,
+        created_at: undefined, // Let supabase assign date
+        match_status: true, // True means to render a clickable board. False, a static board.
         match_concluded: false,
-        game_status: "inProgress", // Initial "inProgress"... others "draw", "red", "green"...
-        red_id: redId,
-        green_id: greenId,
+        game_status: "inProgress", // "inProgress", "draw", "red", "green"
+        red_id: red_id,
+        green_id: green_id,
         move_number: 0,
         made_move: null,
         board: jsonBoard,
-        current_player: "red",
+        current_player: "red", // Red goes first
         red_username: fetched_red_username,
         green_username: fetched_green_username,
       };
 
       // Only one user needs to do the insert and deletion actions, this will prevent unnecessary errors.
-      if (user.id === redId) {
+      if (user.id === red_id) {
         // Insert new entry to "matches" table...
-        const { data: insertData, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from("matches")
           .insert(matchEntry);
 
@@ -821,7 +832,7 @@ const MultiplayerScreen = () => {
         const { error: deleteError } = await supabase
           .from("queue")
           .delete()
-          .match({ match_id: matchId });
+          .match({ match_id: match_id });
 
         if (deleteError) {
           console.error("Error deleting queue entry: ", deleteError);
@@ -830,20 +841,15 @@ const MultiplayerScreen = () => {
           setCurrentQueueEntry([]); // Purge the QueueEntry after deletions so data doesn't hang around...
         }
 
-        const { data: matchHistoryData, error: fetchMatchHistoryError } =
-          await supabase
-            .from("match_history")
-            .select("red_id, green_id, game_status");
+        const { error: fetchMatchHistoryError } = await supabase
+          .from("match_history")
+          .select("red_id, green_id, game_status");
 
         if (fetchMatchHistoryError) {
           console.error(
             "Something went wrong when fetching users.",
             fetchMatchHistoryError,
           );
-        } else if (matchHistoryData) {
-          // setRedMatchHistory(matchHistoryData.find(
-          //     (entry) => entry.red_id === red
-          // ))
         }
       }
 
@@ -968,40 +974,6 @@ const MultiplayerScreen = () => {
     } catch (error) {
       console.error("Error updating 'matches' table: ", error);
     }
-  };
-
-  /* ccc
-   *  Debug function to check state variables */
-  const debugState = (where: string = "") => {
-    if (!user) return;
-
-    // prettier-ignore
-    console.log(
-                    "Debug info :", where, "\n",
-                    // "\nentryId: ", entryId, " (id of row in db)",
-                    "\nmatchId: ", matchId,
-                    // "\nredId: ", redId,
-                    // "\ngreenId: ", greenId,
-                    "\nredReady", redReady,
-                    "\ngreenReady: ", greenReady,
-                    "\ncurrentPlayer: ", currentPlayer,
-                    // "\nYouAreRed?: ", user.id === redId,
-                    // "\nYouAreGreen?: ", user.id === greenId,
-                    // "\nmadeMove: ", madeMove,
-                    "\nmoveNumber: ", moveNumber,
-                    "\nisQueued: ", isQueued,
-                    "\nqueueCount", queueCount,
-                    "\nmatchFound: ", matchFound, " (two players in one 'queue' row)",
-                    "\nmatchStatus: ", matchStatus, " (two players ready, match started)",
-                    "\ngameStatus: ", gameStatus, " (state of the game)",
-                    // "\nloading: ", loading,
-                    "\nboard: ", board,
-                    "\nmatchEntry: ", matchEntry, " (interface of 'matches' db)",
-                    "\ncurrentQueueEntry: ", currentQueueEntry, " (interface of 'queue' db)",
-                    "\nmatchConcluded: ", matchConcluded,
-                );
-
-    // console.log("\n\n-- board: ", board, ", ", where);
   };
 
   return (
