@@ -187,3 +187,5 @@ Unzip the folder somewhere, then go into environment variables and add this:
 ``"...\gradle-8.5\bin"``
 
 to _system variables_ and *Path*. This is not the same as what you did with Java and Android.
+
+test
