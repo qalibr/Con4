@@ -25,6 +25,7 @@ const MultiplayerScreen = () => {
   const { user } = useAuth();
   const [error, setError] = useState<string>(""); // To give feedback to the user on what is wrong
   const [loading, setLoading] = useState<boolean>(false); // Improve user experience with loading spinner
+  const [boardScale, setBoardScale] = useState<number>(1);
 
   /*
    * Basic id's */
@@ -976,10 +977,32 @@ const MultiplayerScreen = () => {
     }
   };
 
+  /*
+   * Dynamic rescaling for problematic small screen dimensions */
+  const handleAdjustBoardScale = () => {
+    const screenWidth = window.innerWidth;
+    if (screenWidth < 600 && 450 < screenWidth) {
+      setBoardScale(0.9);
+    } else if (screenWidth <= 450) {
+      setBoardScale(0.75);
+    } else {
+      setBoardScale(1);
+    }
+  };
+
+  useEffect(() => {
+    handleAdjustBoardScale();
+    window.addEventListener("resize", handleAdjustBoardScale);
+
+    return () => {
+      window.removeEventListener("resize", handleAdjustBoardScale);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Make sure the board is always visible on the page and is in a static position */}
-      <div className="w-full max-w-md mb-2">
+      <div className="w-full max-w-md mb-2 " style={{ transform: `scale(${boardScale})` }}>
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
           <div>
