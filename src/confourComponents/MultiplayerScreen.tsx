@@ -26,6 +26,9 @@ const MultiplayerScreen = () => {
   const [error, setError] = useState<string>(""); // To give feedback to the user on what is wrong
   const [loading, setLoading] = useState<boolean>(false); // Improve user experience with loading spinner
   const [boardScale, setBoardScale] = useState<number>(1);
+  const [currentScreenWidth, setCurrentScreenWidth] = useState(
+    window.innerWidth,
+  );
 
   /*
    * Basic id's */
@@ -981,28 +984,49 @@ const MultiplayerScreen = () => {
    * Dynamic rescaling for problematic small screen dimensions */
   const handleAdjustBoardScale = () => {
     const screenWidth = window.innerWidth;
-    if (screenWidth < 600 && 450 < screenWidth) {
-      setBoardScale(0.75);
-    } else if (screenWidth <= 450) {
-      setBoardScale(0.75);
+
+    if (screenWidth <= 600 && screenWidth > 500) {
+      setBoardScale(0.95);
+    } else if (screenWidth <= 500 && screenWidth > 400) {
+      setBoardScale(0.8);
+    } else if (screenWidth <= 400 && screenWidth > 300) {
+      setBoardScale(0.7);
+    } else if (screenWidth <= 300 && screenWidth > 200) {
+      setBoardScale(0.5);
     } else {
       setBoardScale(1);
     }
   };
 
   useEffect(() => {
-    handleAdjustBoardScale();
-    window.addEventListener("resize", handleAdjustBoardScale);
+    const handleResize = () => {
+      setCurrentScreenWidth(window.innerWidth);
+      handleAdjustBoardScale();
+    };
 
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    // Clean up when the component unmounts
     return () => {
-      window.removeEventListener("resize", handleAdjustBoardScale);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Make sure the board is always visible on the page and is in a static position */}
-      <div className="w-full max-w-md mb-2 " style={{ transform: `scale(${boardScale})` }}>
+      <div className="screen-width-indicator">
+        <ul>
+          {/*<li>Current Screen Width: {currentScreenWidth}px</li>*/}
+          {/*<li>Current Board Scale: {boardScale}</li>*/}
+        </ul>
+      </div>
+
+      <div
+        className="w-full max-w-md mb-2"
+        style={{ transform: `scale(${boardScale})` }}
+      >
         {/* Non-interactive columns as placeholders */}
         {!matchStatus && board && (
           <div>
