@@ -984,9 +984,9 @@ const MultiplayerScreen = () => {
     if (screenWidth < 600 && 450 < screenWidth) {
       setBoardScale(0.75);
     } else if (screenWidth <= 450) {
-      setBoardScale(0.50);
+      setBoardScale(0.75);
     } else {
-      setBoardScale(0.9);
+      setBoardScale(1);
     }
   };
 

@@ -30,10 +30,6 @@ _Requires setup, see below_
 
 ``npx cap run android``
 
-### We can run the test suite with Docker.
-
-``docker-compose up``
-
 ### Git -- Updating feature branches with latest changes from main.
 
 1. ``git checkout main`` Change to main branch
